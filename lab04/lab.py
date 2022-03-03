@@ -95,15 +95,18 @@ def bombs_and_covered_squares(game):
     Write docstring
     """
     num_rows, num_cols = game['dimensions'] 
-    covered_squares, bombs = 0, 0
+    state = 'ongoing'
+    covered_squares = 0
     for r in range(num_rows):
         for c in range(num_cols):
             if game['board'][r][c] == '.':
                 if game['visible'][r][c] == True:
-                    bombs += 1
+                    return 'defeat'
             elif game['visible'][r][c] == False:
                 covered_squares += 1
-    return covered_squares, bombs
+    if covered_squares == 0:
+        state = 'victory'
+    return state
 
 def valid_square(game, n_row, n_col):
     """
@@ -175,26 +178,20 @@ def dig_2d(game, row, col):
         [True, True, False, False]
         [False, False, False, False]
     """
+    game['state'] = bombs_and_covered_squares(game)
+
+    if game['state'] == 'victory' or game['state'] == 'defeat':
+        return 0
 
     if game['board'][row][col] == '.':
         game['visible'][row][col] = True
         game['state'] = 'defeat'
         return 1
-
-    covered_squares, bombs = bombs_and_covered_squares(game)
-    
-    if bombs != 0:
-        # if bombs is not equal to zero, set the game state to defeat and
-        # return 0
-        game['state'] = 'defeat'
-        return 0
-    elif covered_squares == 0:
-        game['state'] = 'victory'
-        return 0
-    
-    elif game['visible'][row][col] != True:
+  
+    if game['visible'][row][col] != True:
         game['visible'][row][col] = True
         revealed = 1
+
     else:
         return 0
 
@@ -208,13 +205,9 @@ def dig_2d(game, row, col):
                 else:
                     revealed += valid
 
-    covered_squares, bombs = bombs_and_covered_squares(game)
-    bad_squares = covered_squares + bombs
-    if bad_squares > 0:
-        game['state'] = 'ongoing'
-        return revealed
-    else:
-        game['state'] = 'victory'
+    state = bombs_and_covered_squares(game)
+    if state != 'defeat':
+        game['state'] = state
         return revealed
 
 def render_2d_locations(game, xray=False):
@@ -435,8 +428,15 @@ if __name__ == "__main__":
     #                    ['.', '.', 1, 0]],
     #          'visible':  [[False, True, False, True],
     #                    [False, False, False, True]]}, False))
-    #[['.', '3', '1', ' '], ['.', '.', '1', ' ']]
-
+    # [['.', '3', '1', ' '], ['.', '.', '1', ' ']]
+    # game = {'dimensions': (2, 4),
+    #          'board': [['.', 3, 1, 0],
+    #                    ['.', '.', 1, 0]],
+    #          'visible': [[False, True, False, False],
+    #                   [False, False, False, False]],
+    #          'state': 'ongoing'}
+    # print(dig_2d(game, 0, 3))
+    # dump(game)
     # Alternatively, can run the doctests JUST for specified function/methods,
     # e.g., for render_2d_locations or any other function you might want.  To
     # do so, comment out the above line, and uncomment the below line of code.

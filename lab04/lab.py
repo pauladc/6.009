@@ -69,22 +69,8 @@ def new_game_2d(num_rows, num_cols, bombs):
         [False, False, False, False]
         [False, False, False, False]
     """
-    # board = []
-    # for r in range(num_rows):
-    #     row = []
-    #     for c in range(num_cols):
-    #         if [r, c] in bombs or (r, c) in bombs:
-    #             row.append('.')
-    #         else:
-    #             row.append(0)
-    #     board.append(row)
-    # visible = []
-    # for r in range(num_rows):
-    #     row = []
-    #     for c in range(num_cols):
-    #         row.append(False)
-    #     visible.append(row)
     board, visible = create_board_and_visible(num_rows, num_cols, bombs)
+
     for r in range(num_rows):
         for c in range(num_cols):
             neighbor_bombs = 0
@@ -103,6 +89,30 @@ def new_game_2d(num_rows, num_cols, bombs):
         'board': board,
         'visible': visible,
         'state': 'ongoing'}
+
+def bombs_and_covered_squares(game):
+    """
+    Write docstring
+    """
+    num_rows, num_cols = game['dimensions'] 
+    covered_squares, bombs = 0, 0
+    for r in range(num_rows):
+        for c in range(num_cols):
+            if game['board'][r][c] == '.':
+                if game['visible'][r][c] == True:
+                    bombs += 1
+            elif game['visible'][r][c] == False:
+                covered_squares += 1
+    return covered_squares, bombs
+
+def valid_square(game, n_row, n_col):
+    """
+    Write docstring
+    """
+    num_rows, num_cols = game['dimensions'] 
+    if 0 <= n_row < num_rows and 0 <= n_col < num_cols:
+        if game['board'][n_row][n_col] != '.' and game['visible'][n_row][n_col] == False:
+            return dig_2d(game, n_row, n_col)
 
 
 def dig_2d(game, row, col):
@@ -165,107 +175,47 @@ def dig_2d(game, row, col):
         [True, True, False, False]
         [False, False, False, False]
     """
-    if game['state'] == 'defeat' or game['state'] == 'victory':
-        return 0
 
     if game['board'][row][col] == '.':
         game['visible'][row][col] = True
         game['state'] = 'defeat'
         return 1
 
-    bombs = 0
-    covered_squares = 0
-    for r in range(game['dimensions'][0]):
-        for c in range(game['dimensions'][1]):
-            if game['board'][r][c] == '.':
-                if game['visible'][r][c] == True:
-                    bombs += 1
-            elif game['visible'][r][c] == False:
-                covered_squares += 1
+    covered_squares, bombs = bombs_and_covered_squares(game)
+    
     if bombs != 0:
         # if bombs is not equal to zero, set the game state to defeat and
         # return 0
         game['state'] = 'defeat'
         return 0
-    if covered_squares == 0:
+    elif covered_squares == 0:
         game['state'] = 'victory'
         return 0
-
-    if game['visible'][row][col] != True:
+    
+    elif game['visible'][row][col] != True:
         game['visible'][row][col] = True
         revealed = 1
     else:
         return 0
 
     if game['board'][row][col] == 0:
-        num_rows, num_cols = game['dimensions']
-        if 0 <= row-1 < num_rows:
-            if 0 <= col-1 < num_cols:
-                if game['board'][row-1][col-1] != '.':
-                    if game['visible'][row-1][col-1] == False:
-                        revealed += dig_2d(game, row-1, col-1)
-        if 0 <= row < num_rows:
-            if 0 <= col-1 < num_cols:
-                if game['board'][row][col-1] != '.':
-                    if game['visible'][row][col-1] == False:
-                        revealed += dig_2d(game, row, col-1)
-        if 0 <= row+1 < num_rows:
-            if 0 <= col-1 < num_cols:
-                if game['board'][row+1][col-1] != '.':
-                    if game['visible'][row+1][col-1] == False:
-                        revealed += dig_2d(game, row+1, col-1)
-        if 0 <= row-1 < num_rows:
-            if 0 <= col < num_cols:
-                if game['board'][row-1][col] != '.':
-                    if game['visible'][row-1][col] == False:
-                        revealed += dig_2d(game, row-1, col)
-        if 0 <= row < num_rows:
-            if 0 <= col < num_cols:
-                if game['board'][row][col] != '.':
-                    if game['visible'][row][col] == False:
-                        revealed += dig_2d(game, row, col)
-        if 0 <= row+1 < num_rows:
-            if 0 <= col < num_cols:
-                if game['board'][row+1][col] != '.':
-                    if game['visible'][row+1][col] == False:
-                        revealed += dig_2d(game, row+1, col)
-        if 0 <= row-1 < num_rows:
-            if 0 <= col+1 < num_cols:
-                if game['board'][row-1][col+1] != '.':
-                    if game['visible'][row-1][col+1] == False:
-                        revealed += dig_2d(game, row-1, col+1)
-        if 0 <= row < num_rows:
-            if 0 <= col+1 < num_cols:
-                if game['board'][row][col+1] != '.':
-                    if game['visible'][row][col+1] == False:
-                        revealed += dig_2d(game, row, col+1)
-        if 0 <= row+1 < num_rows:
-            if 0 <= col+1 < num_cols:
-                if game['board'][row+1][col+1] != '.':
-                    if game['visible'][row+1][col+1] == False:
-                        revealed += dig_2d(game, row+1, col+1)
+        neighbor_coords = ((row-1, row, row+1), (col-1, col, col+1))
+        for r in range(3):
+            for c in range(3):
+                valid = valid_square(game, neighbor_coords[0][r], neighbor_coords[1][c])
+                if valid is None:
+                    continue
+                else:
+                    revealed += valid
 
-    bombs = 0  # set number of bombs to 0
-    covered_squares = 0
-    for r in range(game['dimensions'][0]):
-        # for each r,
-        for c in range(game['dimensions'][1]):
-            # for each c,
-            if game['board'][r][c] == '.':
-                if game['visible'][r][c] == True:
-                    # if the game visible is True, and the board is '.', add 1 to
-                    # bombs
-                    bombs += 1
-            elif game['visible'][r][c] == False:
-                covered_squares += 1
-    bad_squares = bombs + covered_squares
+    covered_squares, bombs = bombs_and_covered_squares(game)
+    bad_squares = covered_squares + bombs
     if bad_squares > 0:
         game['state'] = 'ongoing'
         return revealed
     else:
         game['state'] = 'victory'
         return revealed
-
 
 def render_2d_locations(game, xray=False):
     """

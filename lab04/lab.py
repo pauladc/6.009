@@ -309,7 +309,15 @@ def render_2d_locations(game, xray=False):
     ...                   [False, False, False, True]]}, True)
     [['.', '3', '1', ' '], ['.', '.', '1', ' ']]
     """
-    raise NotImplementedError
+    dump_rep = game.copy()
+    dump_rep['board'] = [[str(e)  if e != 0 else ' ' for e in dump_rep['board'][i]] for i in range(len(dump_rep['board']))]
+    if xray:
+        return dump_rep['board']
+    else:
+        return [[dump_rep['board'][row][col] if dump_rep['visible'][row][col] == True else '_' for col in range(dump_rep['dimensions'][1])] 
+        for row in range(dump_rep['dimensions'][0])]
+
+
 
 
 def render_2d_board(game, xray=False):
@@ -336,7 +344,14 @@ def render_2d_board(game, xray=False):
     ...                            [False, False, True, False]]})
     '.31_\\n__1_'
     """
-    raise NotImplementedError
+    list_locations = render_2d_locations(game, xray)
+    str = []
+    for row in range(len(list_locations)):
+        for col in range(len(list_locations[0])):
+            str.append(list_locations[row][col])
+        if row != len(list_locations) - 1:
+            str.append('\n')
+    return ''.join(str)
 
 
 # N-D IMPLEMENTATION
@@ -474,6 +489,13 @@ if __name__ == "__main__":
     # Test with doctests. Helpful to debug individual lab.py functions.
     _doctest_flags = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
     doctest.testmod(optionflags=_doctest_flags)  # runs ALL doctests
+    # print(render_2d_locations({'dimensions': (2, 4),
+    #          'state': 'ongoing',
+    #          'board': [['.', 3, 1, 0],
+    #                    ['.', '.', 1, 0]],
+    #          'visible':  [[False, True, False, True],
+    #                    [False, False, False, True]]}, False))
+    # #[['.', '3', '1', ' '], ['.', '.', '1', ' ']]
 
     # Alternatively, can run the doctests JUST for specified function/methods,
     # e.g., for render_2d_locations or any other function you might want.  To

@@ -21,6 +21,26 @@ def dump(game):
 
 
 # 2-D IMPLEMENTATION
+def create_board_and_visible(num_rows, num_cols, bombs):
+    """
+    Create a readable representaion of the board and the visible cells.
+    Inputs: num_rows (integer of rows), num_cols(integer of columns), bombs(list of tuple(coordinates))
+    Output: board (list of lists), visible (list of lists)
+    """
+    board, visible = [], []
+    set_bombs = set(bombs)
+    for row in range(num_rows):
+        append_row = []
+        visible_row = []
+        for col in range(num_cols):
+            visible_row.append(False)
+            if (row, col) in set_bombs:
+                append_row.append('.')
+            else:
+                append_row.append(0)
+        board.append(append_row)
+        visible.append(visible_row)
+    return board, visible
 
 
 def new_game_2d(num_rows, num_cols, bombs):
@@ -49,61 +69,34 @@ def new_game_2d(num_rows, num_cols, bombs):
         [False, False, False, False]
         [False, False, False, False]
     """
-    board = []
+    # board = []
+    # for r in range(num_rows):
+    #     row = []
+    #     for c in range(num_cols):
+    #         if [r, c] in bombs or (r, c) in bombs:
+    #             row.append('.')
+    #         else:
+    #             row.append(0)
+    #     board.append(row)
+    # visible = []
+    # for r in range(num_rows):
+    #     row = []
+    #     for c in range(num_cols):
+    #         row.append(False)
+    #     visible.append(row)
+    board, visible = create_board_and_visible(num_rows, num_cols, bombs)
     for r in range(num_rows):
-        row = []
         for c in range(num_cols):
-            if [r, c] in bombs or (r, c) in bombs:
-                row.append('.')
+            neighbor_bombs = 0
+            neighbor_coords = ((r-1, r, r+1), (c-1, c, c+1))
+            for row in neighbor_coords[0]:
+                for col in neighbor_coords[1]:
+                    if 0 <= row < num_rows and 0 <= col < num_cols:
+                        if board[row][col] == '.':
+                            neighbor_bombs += 1
+            if board[r][c]=='.':
+                next
             else:
-                row.append(0)
-        board.append(row)
-    visible = []
-    for r in range(num_rows):
-        row = []
-        for c in range(num_cols):
-            row.append(False)
-        visible.append(row)
-    for r in range(num_rows):
-        for c in range(num_cols):
-            if board[r][c] == 0:
-                neighbor_bombs = 0
-                if 0 <= r-1 < num_rows:
-                    if 0 <= c-1 < num_cols:
-                        if board[r-1][c-1] == '.':
-                            neighbor_bombs += 1
-                if 0 <= r < num_rows:
-                    if 0 <= c-1 < num_cols:
-                        if board[r][c-1] == '.':
-                            neighbor_bombs += 1
-                if 0 <= r+1 < num_rows:
-                    if 0 <= c-1 < num_cols:
-                        if board[r+1][c-1] == '.':
-                            neighbor_bombs += 1
-                if 0 <= r-1 < num_rows:
-                    if 0 <= c < num_cols:
-                        if board[r-1][c] == '.':
-                            neighbor_bombs += 1
-                if 0 <= r < num_rows:
-                    if 0 <= c < num_cols:
-                        if board[r][c] == '.':
-                            neighbor_bombs += 1
-                if 0 <= r+1 < num_rows:
-                    if 0 <= c < num_cols:
-                        if board[r+1][c] == '.':
-                            neighbor_bombs += 1
-                if 0 <= r-1 < num_rows:
-                    if 0 <= c+1 < num_cols:
-                        if board[r-1][c+1] == '.':
-                            neighbor_bombs += 1
-                if 0 <= r < num_rows:
-                    if 0 <= c+1 < num_cols:
-                        if board[r][c+1] == '.':
-                            neighbor_bombs += 1
-                if 0 <= r+1 < num_rows:
-                    if 0 <= c+1 < num_cols:
-                        if board[r+1][c+1] == '.':
-                            neighbor_bombs += 1
                 board[r][c] = neighbor_bombs
     return {
         'dimensions': (num_rows, num_cols),
@@ -173,7 +166,6 @@ def dig_2d(game, row, col):
         [False, False, False, False]
     """
     if game['state'] == 'defeat' or game['state'] == 'victory':
-        game['state'] = game['state']  # keep the state the same
         return 0
 
     if game['board'][row][col] == '.':
@@ -313,9 +305,7 @@ def render_2d_locations(game, xray=False):
     dump_rep['board'] = [[str(e)  if e != 0 else ' ' for e in dump_rep['board'][i]] for i in range(len(dump_rep['board']))]
     if xray:
         return dump_rep['board']
-    else:
-        return [[dump_rep['board'][row][col] if dump_rep['visible'][row][col] == True else '_' for col in range(dump_rep['dimensions'][1])] 
-        for row in range(dump_rep['dimensions'][0])]
+    return [[dump_rep['board'][row][col] if dump_rep['visible'][row][col] == True else '_' for col in range(dump_rep['dimensions'][1])]for row in range(dump_rep['dimensions'][0])]
 
 
 
@@ -495,7 +485,7 @@ if __name__ == "__main__":
     #                    ['.', '.', 1, 0]],
     #          'visible':  [[False, True, False, True],
     #                    [False, False, False, True]]}, False))
-    # #[['.', '3', '1', ' '], ['.', '.', '1', ' ']]
+    #[['.', '3', '1', ' '], ['.', '.', '1', ' ']]
 
     # Alternatively, can run the doctests JUST for specified function/methods,
     # e.g., for render_2d_locations or any other function you might want.  To

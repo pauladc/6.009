@@ -289,6 +289,52 @@ def render_2d_board(game, xray=False):
 
 # N-D IMPLEMENTATION
 
+def create_array(dimensions, value):
+    """
+    Creates a multi-dimensional array
+    """
+    if len(dimensions) == 1:
+        return [value for i in range(dimensions[0])]
+    else:
+        return [create_array(dimensions[1:], value) for j in range(dimensions[0])]
+
+        
+
+def check_game_state(game_board, game_visible, covered_squares = 0):
+    """
+    Checks the state of the game.
+    """
+    def check_single_list(game_board, game_visible, squares):
+        """
+        Checks if input board is not a list of lists. If true it will check 
+        each item to determine game state.
+        """
+        if isinstance(game_board[0], list) == False:
+            for i in range(len(game_board)):
+                print('inside isinstance ', game_board[i])
+                if game_board[i] == '.':
+                    if game_visible[i] == True:
+                        return 'defeat'
+                elif game_visible[i] == False:
+                    print('increasing squares')
+                    squares += 1
+            return squares
+
+    for r in range(len(game_board)):
+        temp_squares = check_single_list(game_board, game_visible, covered_squares)
+        if temp_squares == None:
+            return check_game_state(game_board[r], game_visible[r], covered_squares)
+        if temp_squares == 'defeat':
+            return 'defeat'
+        else:
+            covered_squares += temp_squares            
+    if covered_squares == 0:
+        return 'victory'
+    return 'ongoing'
+
+# def all_cords(board):
+
+
 
 def new_game_nd(dimensions, bombs):
     """
@@ -420,9 +466,13 @@ def render_nd(game, xray=False):
 
 if __name__ == "__main__":
     # Test with doctests. Helpful to debug individual lab.py functions.
-    _doctest_flags = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
-    doctest.testmod(optionflags=_doctest_flags)  # runs ALL doctests
-    # print(render_2d_locations({'dimensions': (2, 4),
+    # _doctest_flags = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
+    # doctest.testmod(optionflags=_doctest_flags)  # runs ALL doctests
+    print(create_array([2, 3, 4], 0))
+    twod = {'board': [['.', 3, 1, 0], ['.', '.', 1, 0]], 'dimensions': [2, 4], 'state': 'defeat', 'visible':
+        [[False, True, False, True], [False, False, True, True]]}
+    print(check_game_state(twod['board'], twod['visible']))
+    # print(render_2d_locations({'dimensions': (2, 4), 
     #          'state': 'ongoing',
     #          'board': [['.', 3, 1, 0],
     #                    ['.', '.', 1, 0]],

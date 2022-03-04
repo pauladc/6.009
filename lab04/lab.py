@@ -366,16 +366,20 @@ def check_game_state(board, visible, coordinates, squares = 0):
     #     return 'victory'
     # return 'ongoing'
 
-def check_value(board, coordinates, list_coords): 
-    """
-    check value at list of indexes
-    """
-    list_coords = set(list_coords)
-    toReturn = []
-    for e in coordinates:
-        if e in list_coords:
-            toReturn.append(getVal(board, e))
-    return toReturn
+# def check_value(board, coords): 
+#     """
+#     check value at list of indexes
+#     """
+    # # list_coords = set(list_coords)
+    # allcoordinates = set(allcoordinates)
+    # for e in allcoordinates:
+    #     if e == coords:
+    #         return getVal(board, e)
+    # # return toReturn
+    # if len(coords) == 1:
+    #     return 
+    # else:
+    #     return check_value(board[coords[0]], coords[1:] )
 
     # list_coords = set(list_coords)
     # final = []
@@ -439,7 +443,7 @@ def find_neighbors(board, dimensions, coords):
                 if 0 <= possible_neighbor[i] < dimensions[i]:
                     recursive_func(board, possible_neighbor, dimensions, i+1)
     recursive_func(board, coords, dimensions)
-    return neighbors
+    return set(neighbors)
         
 
 
@@ -475,14 +479,12 @@ def new_game_nd(dimensions, bombs):
     visible = create_array(dimensions, False)
     for e in bombs:
         change_val(board, e, '.')
-    for e in all_coords(dimensions):
         neighbors = find_neighbors(board, dimensions, e)
         # print('neighbors ', neighbors)
-        neighbors = set(neighbors)
-        neighboring_values = check_value(board, coordinates, neighbors)
         # print('neigbor values', neighboring_values)
-        if check_value(board, coordinates, [e]) != ['.']:
-            change_val(board, e, neighboring_values.count('.'))
+        for e in neighbors:
+            if getVal(board, e) != '.':
+                change_val(board, e, getVal(board, e)+1)
     return {'board':board, 'dimensions': dimensions, 'state': 'ongoing', 'visible': visible}
 
 
@@ -545,7 +547,48 @@ def dig_nd(game, coordinates):
         [[False, True], [False, True], [False, False], [False, False]]
         [[False, False], [False, False], [False, False], [False, False]]
     """
-    raise NotImplementedError
+    all_coordinates =  all_coords(game['dimensions'])
+    game['state'] = check_game_state(game['board'], game['visible'], all_coordinates)
+
+    if game['state'] == 'victory' or game['state'] == 'defeat':
+        return 0
+    # print(coordinates)
+    board_val_at_coord = getVal(game['board'], coordinates)
+    # print(board_val_at_coord)
+    visible_val_at_coord = getVal(game['visible'], coordinates)
+    # print(visible_val_at_coord)
+
+    if board_val_at_coord == '.':
+        visible_val_at_coord = True
+        change_val(game['visible'], coordinates, True)
+        game['state'] = 'defeat'
+        return 1
+  
+    if visible_val_at_coord != True:
+        change_val(game['visible'], coordinates, True)
+        revealed = 1
+
+    else:
+        return 0
+
+    if board_val_at_coord == 0:
+        neighbor_coords = find_neighbors(game['board'], game['dimensions'], coordinates)
+        for e in neighbor_coords:
+            if e != coordinates:
+                # print(e)
+                value = getVal(game['board'], e)
+                # print(value)
+                if isinstance(value, int):
+                    revealed += 1
+                    change_val(game['visible'], e, True)
+                else:
+                    next
+
+    state = check_game_state(game['board'], game['visible'], all_coordinates)
+    if state != 'defeat':
+        game['state'] = state
+        return revealed
+
 
 
 def render_nd(game, xray=False):
@@ -591,8 +634,27 @@ if __name__ == "__main__":
     # print(create_array([2, 3, 4], 0))
     # twod = {'board': [['.', 3, 1, 0], ['.', '.', 1, 0]], 'dimensions': [2, 4], 'state': 'defeat', 'visible':
     #     [[False, True, False, True], [False, False, True, True]]}
-    threed = [[[[1, 1], ['.', 2], [2, 2]], [[1, 1], [2, 2], ['.', 2]],
-             [[1, 1], [2, 2], [1, 1]], [[1, '.'], [1, 1], [0, 0]]]]
+    # threed = [[[[1, 1], ['.', 2], [2, 2]], [[1, 1], [2, 2], ['.', 2]],
+    #          [[1, 1], [2, 2], [1, 1]], [[1, '.'], [1, 1], [0, 0]]]]
+    # g = {'dimensions': (2, 4, 2),
+    #       'board': [[[3, '.'], [3, 3], [1, 1], [0, 0]],
+    #                 [['.', 3], [3, '.'], [1, 1], [0, 0]]],
+    #       'visible': [[[False, False], [False, True], [False, False],
+    #                 [False, False]],
+    #                [[False, False], [False, False], [False, False],
+    #                 [False, False]]],
+    #       'state': 'ongoing'}
+    # print(dig_nd(g, (0, 3, 0)))
+    # g = {'dimensions': (2, 4, 2),
+    #       'board': [[[3, '.'], [3, 3], [1, 1], [0, 0]],
+    #                 [['.', 3], [3, '.'], [1, 1], [0, 0]]],
+    #       'visible': [[[False, False], [False, True], [False, False],
+    #                 [False, False]],
+    #                [[False, False], [False, False], [False, False],
+    #                 [False, False]]],
+    #       'state': 'ongoing'}
+    # dig_nd(g, (0, 0, 1))
+    # dump(g)
     # change_value(threed, [[0, 1, 0], [1, 0, 0], [1, 1, 1]], 8)
     # print(threed)
     # print(find_neighbors(threed, (2, 4, 2), (0, 2, 1)))

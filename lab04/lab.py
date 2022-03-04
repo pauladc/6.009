@@ -299,82 +299,130 @@ def create_array(dimensions, value):
         return [create_array(dimensions[1:], value) for j in range(dimensions[0])]
 
 
+def all_coords(dimensions):
+    def iterate(dimensions, j, dim={}):
+        if j < len(dimensions):
+            dim[j] = []
+            for i in range(dimensions[j]):
+                dim[j] += [i]
+            return iterate(dimensions, j+1, dim)
+        else:
+            return dim
+    total_possible =  iterate(dimensions, 0)
+    possible = list(total_possible.values())
+    def permute(possible, coords = [], sol=[]):
+        if len(possible)==0:
+           sol.append(tuple(coords))
+           return
+        for e in possible[0]:
+            permute(possible[1:], coords + [e])
+        return sol
+    return permute(possible)
 
-def check_game_state(game_board, game_visible, covered_squares = 0):
+def getVal(array, coords):
+    if len(coords)== 1:
+        val = array[coords[0]]
+        return val
+    else:
+        return getVal(array[coords[0]], coords[1:])
+
+def check_game_state(board, visible, coordinates, squares = 0):
     """
     Checks the state of the game.
     """
-    def check_single_list(game_board, game_visible, squares):
-        """
-        Checks if input board is not a list of lists. If true it will check 
-        each item to determine game state.
-        """
-        if isinstance(game_board[0], list) == False:
-            for i in range(len(game_board)):
-                if game_board[i] == '.':
-                    if game_visible[i] == True:
-                        return 'defeat'
-                elif game_visible[i] == False:
-                    squares += 1
-            return squares
-
-    for r in range(len(game_board)):
-        temp_squares = check_single_list(game_board, game_visible, covered_squares)
-        if temp_squares == None:
-            return check_game_state(game_board[r], game_visible[r], covered_squares)
-        if temp_squares == 'defeat':
-            return 'defeat'
-        else:
-            covered_squares += temp_squares            
-    if covered_squares == 0:
+    for e in coordinates:
+        if getVal(board, e) == '.':
+           if getVal(visible, e) == True:
+                return 'defeat'
+    for e in coordinates:
+        if getVal(board, e) != '.' and getVal(visible, e)==False:
+            squares += 1
+    if squares == 0:
         return 'victory'
     return 'ongoing'
+    # def check_single_list(game_board, game_visible, squares):
+    #     """
+    #     Checks if input board is not a list of lists. If true it will check 
+    #     each item to determine game state.
+    #     """
+    #     if isinstance(game_board[0], list) == False:
+    #         for i in range(len(game_board)):
+    #             if game_board[i] == '.':
+    #                 if game_visible[i] == True:
+    #                     return 'defeat'
+    #             elif game_visible[i] == False:
+    #                 squares += 1
+    #         return squares
 
-def check_value(board, list_coords): 
+    # for r in range(len(game_board)):
+    #     temp_squares = check_single_list(game_board, game_visible, covered_squares)
+    #     if temp_squares == None:
+    #         return check_game_state(game_board[r], game_visible[r], covered_squares)
+    #     if temp_squares == 'defeat':
+    #         return 'defeat'
+    #     else:
+    #         covered_squares += temp_squares            
+    # if covered_squares == 0:
+    #     return 'victory'
+    # return 'ongoing'
+
+def check_value(board, coordinates, list_coords): 
     """
     check value at list of indexes
     """
-    final = []
-    def value_to_append(board, list_coords, index=[]):
-        print(list_coords)
-        toReturn = []
-        for i in range(len(board)):
-            if isinstance(board[i], list) == False:
-                print(tuple(index + [i]))
-                if tuple(index + [i]) in list_coords:
-                    toReturn.append(board[i])
-                else:
-                    next
-            else:
-                toReturn += value_to_append(board[i], list_coords, index + [i])
-        return toReturn
-    for i in range(len(board)):
-        if value_to_append(board[i], list_coords) != None:
-            final += value_to_append(board[i], list_coords, [i])
-        else:
-            next
-    return final
+    list_coords = set(list_coords)
+    toReturn = []
+    for e in coordinates:
+        if e in list_coords:
+            toReturn.append(getVal(board, e))
+    return toReturn
 
-def change_value(board, list_coords, value): 
-    """
-    check value at list of indexes
-    """
+    # list_coords = set(list_coords)
+    # final = []
+    # def value_to_append(board, list_coords, index=[]):
+    #     # print(list_coords)
+    #     toReturn = []
+    #     for i in range(len(board)):
+    #         if isinstance(board[i], list) == False:
+    #             # print(tuple(index + [i]))
+    #             if tuple(index + [i]) in list_coords:
+    #                 toReturn.append(board[i])
+    #             else:
+    #                 next
+    #         else:
+    #             toReturn += value_to_append(board[i], list_coords, index + [i])
+    #     return toReturn
+    # for i in range(len(board)):
+    #     if value_to_append(board[i], list_coords) != None:
+    #         final += value_to_append(board[i], list_coords, [i])
+    #     else:
+    #         next
+    # return final
+
+def change_val(array, coord, val):
+    if len(coord)== 1:
+        index = coord[0]
+        array[index] = val
+    else:
+        new_coords = coord[1:]
+        # print(coord[0])
+        # print(new_coords)
+        change_val(array[coord[0]], new_coords, val)
+
     # print(list_coords)
-    def value_to_change(board, list_coords, index=[]):
-        for i in range(len(board)):
-            if isinstance(board[i], list) == False:
-                tuple_index = tuple(index + [i]) 
-                # print(tuple_index)
-                if tuple_index in list_coords:
-                    # print('value updated')
-                    board[i] = value
-            else:
-                # print('recursive call')
-                value_to_change(board[i], list_coords, index + [i])
-    for i in range(len(board)):
-        # print('changing value')
-        value_to_change(board[i], list_coords, [i])
-    return board
+    # list_coords = set(list_coords)
+    # def value_to_change(board, list_coords, index=[]):
+    #     for i in range(len(board)):
+    #         if isinstance(board[i], list) == False:
+    #             tuple_index = tuple(index + [i]) 
+    #             # print(tuple_index)
+    #             if tuple_index in list_coords:
+    #                 board[i] = value
+    #         else:
+    #             value_to_change(board[i], list_coords, index + [i])
+    # for i in range(len(board)):
+    #     value_to_change(board[i], list_coords, [i])
+    # return board
 
 def find_neighbors(board, dimensions, coords):
     changeVars = (-1, 0, 1)
@@ -392,15 +440,6 @@ def find_neighbors(board, dimensions, coords):
                     recursive_func(board, possible_neighbor, dimensions, i+1)
     recursive_func(board, coords, dimensions)
     return neighbors
-
-
-def all_coords(dimensions):
-    coords = []
-    for i in range(dimensions[0]):
-            for j in range(dimensions[1]):
-                for k in range(dimensions[2]):
-                    coords.append((i, j, k))
-    return coords
         
 
 
@@ -432,19 +471,18 @@ def new_game_nd(dimensions, bombs):
         [[False, False], [False, False], [False, False], [False, False]]
     """
     board = create_array(dimensions, 0)
+    coordinates =  all_coords(dimensions)
     visible = create_array(dimensions, False)
-    board = change_value(board, set(bombs), '.')
+    for e in bombs:
+        change_val(board, e, '.')
     for e in all_coords(dimensions):
         neighbors = find_neighbors(board, dimensions, e)
         # print('neighbors ', neighbors)
         neighbors = set(neighbors)
-        neighboring_values = check_value(board, neighbors)
+        neighboring_values = check_value(board, coordinates, neighbors)
         # print('neigbor values', neighboring_values)
-        if check_value(board, [e]) != ['.']:
-            change_value(board, [e], neighboring_values.count('.'))
-    
-
-
+        if check_value(board, coordinates, [e]) != ['.']:
+            change_val(board, e, neighboring_values.count('.'))
     return {'board':board, 'dimensions': dimensions, 'state': 'ongoing', 'visible': visible}
 
 
@@ -548,8 +586,8 @@ def render_nd(game, xray=False):
 
 if __name__ == "__main__":
     # Test with doctests. Helpful to debug individual lab.py functions.
-    # _doctest_flags = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
-    # doctest.testmod(optionflags=_doctest_flags)  # runs ALL doctests
+    _doctest_flags = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
+    doctest.testmod(optionflags=_doctest_flags)  # runs ALL doctests
     # print(create_array([2, 3, 4], 0))
     # twod = {'board': [['.', 3, 1, 0], ['.', '.', 1, 0]], 'dimensions': [2, 4], 'state': 'defeat', 'visible':
     #     [[False, True, False, True], [False, False, True, True]]}
@@ -576,8 +614,10 @@ if __name__ == "__main__":
     # print(dig_2d(game, 0, 3))
     # dump(game)
 
-    g = new_game_nd((2, 4, 2), [(0, 0, 1), (1, 0, 0), (1, 1, 1)])
-    dump(g)
+    # g = new_game_nd((2, 4, 2), [(0, 0, 1), (1, 0, 0), (1, 1, 1)])
+    # dump(g)
+
+    # print(all_coords([2, 4, 2]))
     # Alternatively, can run the doctests JUST for specified function/methods,
     # e.g., for render_2d_locations or any other function you might want.  To
     # do so, comment out the above line, and uncomment the below line of code.

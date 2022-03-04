@@ -298,7 +298,7 @@ def create_array(dimensions, value):
     else:
         return [create_array(dimensions[1:], value) for j in range(dimensions[0])]
 
-        
+
 
 def check_game_state(game_board, game_visible, covered_squares = 0):
     """
@@ -311,12 +311,10 @@ def check_game_state(game_board, game_visible, covered_squares = 0):
         """
         if isinstance(game_board[0], list) == False:
             for i in range(len(game_board)):
-                print('inside isinstance ', game_board[i])
                 if game_board[i] == '.':
                     if game_visible[i] == True:
                         return 'defeat'
                 elif game_visible[i] == False:
-                    print('increasing squares')
                     squares += 1
             return squares
 
@@ -332,8 +330,29 @@ def check_game_state(game_board, game_visible, covered_squares = 0):
         return 'victory'
     return 'ongoing'
 
-# def all_cords(board):
-
+def check_value(board, list_coords, index = []): 
+    """
+    check value at list of indexes
+    """
+    final = []
+    def value_to_append(board, list_coords, index=[]):
+        toReturn = []
+        for i in range(len(board)):
+            if isinstance(board[i], list) == False:
+                if index + [i] in list_coords:
+                    toReturn.append(board[i])
+                else:
+                    next
+            else:
+                toReturn += value_to_append(board[i], list_coords, index + [i])
+        return toReturn
+    for i in range(len(board)):
+        if value_to_append(board[i], list_coords) != None:
+            final += value_to_append(board[i], list_coords)
+        else:
+            next
+    return final
+        
 
 
 def new_game_nd(dimensions, bombs):
@@ -468,10 +487,11 @@ if __name__ == "__main__":
     # Test with doctests. Helpful to debug individual lab.py functions.
     # _doctest_flags = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
     # doctest.testmod(optionflags=_doctest_flags)  # runs ALL doctests
-    print(create_array([2, 3, 4], 0))
+    # print(create_array([2, 3, 4], 0))
     twod = {'board': [['.', 3, 1, 0], ['.', '.', 1, 0]], 'dimensions': [2, 4], 'state': 'defeat', 'visible':
         [[False, True, False, True], [False, False, True, True]]}
-    print(check_game_state(twod['board'], twod['visible']))
+    print(check_value([[[[1, 1], ['.', 2], [2, 2]], [[1, 1], [2, 2], ['.', 2]],
+             [[1, 1], [2, 2], [1, 1]], [[1, '.'], [1, 1], [0, 0]]]], [[0, 1, 0], [1, 0, 0], [1, 1, 1]]))
     # print(render_2d_locations({'dimensions': (2, 4), 
     #          'state': 'ongoing',
     #          'board': [['.', 3, 1, 0],

@@ -330,16 +330,18 @@ def check_game_state(game_board, game_visible, covered_squares = 0):
         return 'victory'
     return 'ongoing'
 
-def check_value(board, list_coords, index = []): 
+def check_value(board, list_coords): 
     """
     check value at list of indexes
     """
     final = []
     def value_to_append(board, list_coords, index=[]):
+        print(list_coords)
         toReturn = []
         for i in range(len(board)):
             if isinstance(board[i], list) == False:
-                if index + [i] in list_coords:
+                print(tuple(index + [i]))
+                if tuple(index + [i]) in list_coords:
                     toReturn.append(board[i])
                 else:
                     next
@@ -348,10 +350,57 @@ def check_value(board, list_coords, index = []):
         return toReturn
     for i in range(len(board)):
         if value_to_append(board[i], list_coords) != None:
-            final += value_to_append(board[i], list_coords)
+            final += value_to_append(board[i], list_coords, [i])
         else:
             next
     return final
+
+def change_value(board, list_coords, value): 
+    """
+    check value at list of indexes
+    """
+    # print(list_coords)
+    def value_to_change(board, list_coords, index=[]):
+        for i in range(len(board)):
+            if isinstance(board[i], list) == False:
+                tuple_index = tuple(index + [i]) 
+                # print(tuple_index)
+                if tuple_index in list_coords:
+                    # print('value updated')
+                    board[i] = value
+            else:
+                # print('recursive call')
+                value_to_change(board[i], list_coords, index + [i])
+    for i in range(len(board)):
+        # print('changing value')
+        value_to_change(board[i], list_coords, [i])
+    return board
+
+def find_neighbors(board, dimensions, coords):
+    changeVars = (-1, 0, 1)
+    neighbors = []
+    def recursive_func(board, coords, dimensions, i=0):
+        if i == len(coords) - 1:
+            for change in changeVars:
+                possible_neighbor = list(coords[:i]) + [ coords[i]+change ] + list(coords[i+1:])
+                if 0 <= possible_neighbor[i] < dimensions[i]:
+                    neighbors.append(tuple(possible_neighbor))
+        else:
+            for change in changeVars:
+                possible_neighbor = list(coords[:i]) + [ coords[i]+change ] + list(coords[i+1:])
+                if 0 <= possible_neighbor[i] < dimensions[i]:
+                    recursive_func(board, possible_neighbor, dimensions, i+1)
+    recursive_func(board, coords, dimensions)
+    return neighbors
+
+
+def all_coords(dimensions):
+    coords = []
+    for i in range(dimensions[0]):
+            for j in range(dimensions[1]):
+                for k in range(dimensions[2]):
+                    coords.append((i, j, k))
+    return coords
         
 
 
@@ -382,7 +431,21 @@ def new_game_nd(dimensions, bombs):
         [[False, False], [False, False], [False, False], [False, False]]
         [[False, False], [False, False], [False, False], [False, False]]
     """
-    raise NotImplementedError
+    board = create_array(dimensions, 0)
+    visible = create_array(dimensions, False)
+    board = change_value(board, set(bombs), '.')
+    for e in all_coords(dimensions):
+        neighbors = find_neighbors(board, dimensions, e)
+        # print('neighbors ', neighbors)
+        neighbors = set(neighbors)
+        neighboring_values = check_value(board, neighbors)
+        # print('neigbor values', neighboring_values)
+        if check_value(board, [e]) != ['.']:
+            change_value(board, [e], neighboring_values.count('.'))
+    
+
+
+    return {'board':board, 'dimensions': dimensions, 'state': 'ongoing', 'visible': visible}
 
 
 def dig_nd(game, coordinates):
@@ -488,10 +551,15 @@ if __name__ == "__main__":
     # _doctest_flags = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
     # doctest.testmod(optionflags=_doctest_flags)  # runs ALL doctests
     # print(create_array([2, 3, 4], 0))
-    twod = {'board': [['.', 3, 1, 0], ['.', '.', 1, 0]], 'dimensions': [2, 4], 'state': 'defeat', 'visible':
-        [[False, True, False, True], [False, False, True, True]]}
-    print(check_value([[[[1, 1], ['.', 2], [2, 2]], [[1, 1], [2, 2], ['.', 2]],
-             [[1, 1], [2, 2], [1, 1]], [[1, '.'], [1, 1], [0, 0]]]], [[0, 1, 0], [1, 0, 0], [1, 1, 1]]))
+    # twod = {'board': [['.', 3, 1, 0], ['.', '.', 1, 0]], 'dimensions': [2, 4], 'state': 'defeat', 'visible':
+    #     [[False, True, False, True], [False, False, True, True]]}
+    threed = [[[[1, 1], ['.', 2], [2, 2]], [[1, 1], [2, 2], ['.', 2]],
+             [[1, 1], [2, 2], [1, 1]], [[1, '.'], [1, 1], [0, 0]]]]
+    # change_value(threed, [[0, 1, 0], [1, 0, 0], [1, 1, 1]], 8)
+    # print(threed)
+    # print(find_neighbors(threed, (2, 4, 2), (0, 2, 1)))
+    # print(all_coords((2, 3, 4)))
+
     # print(render_2d_locations({'dimensions': (2, 4), 
     #          'state': 'ongoing',
     #          'board': [['.', 3, 1, 0],
@@ -507,6 +575,9 @@ if __name__ == "__main__":
     #          'state': 'ongoing'}
     # print(dig_2d(game, 0, 3))
     # dump(game)
+
+    g = new_game_nd((2, 4, 2), [(0, 0, 1), (1, 0, 0), (1, 1, 1)])
+    dump(g)
     # Alternatively, can run the doctests JUST for specified function/methods,
     # e.g., for render_2d_locations or any other function you might want.  To
     # do so, comment out the above line, and uncomment the below line of code.

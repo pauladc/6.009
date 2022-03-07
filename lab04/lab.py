@@ -325,6 +325,9 @@ def all_coords(dimensions):
     Returns a list of all possible coordinates in a board.
     """
     def iterate(dimensions, j, dim={}):
+        """
+        Returns a dictionary with all the possible values that can be adopted at each dimention
+        """
         if j < len(dimensions):
             dim[j] = []
             for i in range(dimensions[j]):
@@ -335,6 +338,9 @@ def all_coords(dimensions):
     total_possible =  iterate(dimensions, 0)
     possible = list(total_possible.values())
     def permute(possible, coords = [], sol=[]):
+        """
+        Permutes through the possible values at each dimension to find all permutations
+        """
         if len(possible)==0:
            sol.append(tuple(coords))
            return
@@ -377,12 +383,15 @@ def check_game_state(game_board, game_visible, covered_squares = 0):
 
     for r in range(len(game_board)):
         temp_squares = check_single_list(game_board, game_visible, covered_squares)
+        #if it is a list of lists
         if temp_squares == None:
             return check_game_state(game_board[r], game_visible[r], covered_squares)
+        #if the helper function returned defeat
         if temp_squares == 'defeat':
             return 'defeat'
         else:
-            covered_squares += temp_squares            
+            covered_squares += temp_squares   
+    #if there are no covered safe squares         
     if covered_squares == 0:
         return 'victory'
     return 'ongoing'

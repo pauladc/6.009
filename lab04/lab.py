@@ -74,9 +74,8 @@ def new_game_2d(num_rows, num_cols, bombs):
     #using 3d implementation
 
     #board, visible = create_array((num_rows, num_cols), 0), create_array((num_rows, num_cols), False)
-    #all_coords = all_coords(board)
-    #for coords in all_coords:
-    #   neighbors = find_neighbors(board, (num_rows, num_cols), coords)
+    #for bomb in bombs:
+    #   neighbors = find_neighbors(board, (num_rows, num_cols), bomb)
     #   for e in neighbors:
     #         if get_val(board, e) != '.':
     #             change_val(board, e, get_val(board, e)+1)
@@ -86,11 +85,12 @@ def new_game_2d(num_rows, num_cols, bombs):
     #     'visible': visible,
     #     'state': 'ongoing'}
 
-
+    #goes throuugh all row and columns
     for r in range(num_rows):
         for c in range(num_cols):
             neighbor_bombs = 0
             neighbor_coords = ((r-1, r, r+1), (c-1, c, c+1))
+            #checks all possible neighbors for validity
             for row in neighbor_coords[0]:
                 for col in neighbor_coords[1]:
                     if 0 <= row < num_rows and 0 <= col < num_cols:
@@ -115,6 +115,7 @@ def bombs_and_covered_squares(game):
     num_rows, num_cols = game['dimensions'] 
     state = 'ongoing'
     covered_squares = 0
+    #goes through all possible row and column values checking for bombs and covered squares
     for r in range(num_rows):
         for c in range(num_cols):
             if game['board'][r][c] == '.':
@@ -122,6 +123,7 @@ def bombs_and_covered_squares(game):
                     return 'defeat'
             elif game['visible'][r][c] == False:
                 covered_squares += 1
+    #if no safe squares are covered the game is won
     if covered_squares == 0:
         state = 'victory'
     return state
@@ -132,6 +134,7 @@ def valid_square(game, n_row, n_col):
     outside the dimensions specified)
     """
     num_rows, num_cols = game['dimensions'] 
+    #checks if row and column values are valid
     if 0 <= n_row < num_rows and 0 <= n_col < num_cols:
         if game['board'][n_row][n_col] != '.' and game['visible'][n_row][n_col] == False:
             return dig_2d(game, n_row, n_col)

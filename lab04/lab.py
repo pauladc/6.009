@@ -92,7 +92,9 @@ def new_game_2d(num_rows, num_cols, bombs):
 
 def bombs_and_covered_squares(game):
     """
-    Write docstring
+    Checks whether a bomb has been discovered. If so, it
+    returns defeat. Otherwise, it will count the number of safe covered
+    squares. If all safe squares have been revealed,return victory.
     """
     num_rows, num_cols = game['dimensions'] 
     state = 'ongoing'
@@ -110,7 +112,8 @@ def bombs_and_covered_squares(game):
 
 def valid_square(game, n_row, n_col):
     """
-    Write docstring
+    Checks if a coordinate is a valid coordinate. (It is not negative or
+    outside the dimensions specified)
     """
     num_rows, num_cols = game['dimensions'] 
     if 0 <= n_row < num_rows and 0 <= n_col < num_cols:
@@ -291,7 +294,7 @@ def render_2d_board(game, xray=False):
 
 def create_array(dimensions, value):
     """
-    Creates a multi-dimensional array
+    Creates a multi-dimensional array by employing recursion. It will create an array filled with a specific value.
     """
     if len(dimensions) == 1:
         return [value for i in range(dimensions[0])]
@@ -299,7 +302,12 @@ def create_array(dimensions, value):
         return [create_array(dimensions[1:], value) for j in range(dimensions[0])]
 
 
+
+
 def all_coords(dimensions):
+    """
+    Returns a list of all possible coordinates in a board.
+    """
     def iterate(dimensions, j, dim={}):
         if j < len(dimensions):
             dim[j] = []
@@ -319,47 +327,84 @@ def all_coords(dimensions):
         return sol
     return permute(possible)
 
+
+
 def get_val(array, coords):
+    """
+    Returns the value at a specific coordinate
+    """
     if len(coords)== 1:
-        val = array[coords[0]]
-        return val
+        toReturn = array[coords[0]]
+        return toReturn
     else:
         return get_val(array[coords[0]], coords[1:])
 
-def check_game_state(visited, dimensions, bombs):
+
+
+def check_game_state(game_board, game_visible, covered_squares = 0):
     """
     Checks the state of the game.
     """
-    squares = 1
-    for e in dimensions:
-        squares *= e
-    if visited == squares - bombs:
-        return True
-    return False
+    def check_single_list(game_board, game_visible, squares):
+        """
+        Checks if input board is not a list of lists. If true it will check 
+        each item to determine game state.
+        """
+        if isinstance(game_board[0], list) == False:
+            for i in range(len(game_board)):
+                if game_board[i] == '.':
+                    if game_visible[i] == True:
+                        return 'defeat'
+                elif game_visible[i] == False:
+                    squares += 1
+            return squares
 
-def change_val(array, coord, val):
+    for r in range(len(game_board)):
+        temp_squares = check_single_list(game_board, game_visible, covered_squares)
+        if temp_squares == None:
+            return check_game_state(game_board[r], game_visible[r], covered_squares)
+        if temp_squares == 'defeat':
+            return 'defeat'
+        else:
+            covered_squares += temp_squares            
+    if covered_squares == 0:
+        return 'victory'
+    return 'ongoing'
+
+
+
+def change_val(array, coord, value):
+    """
+    Changes the value at a specific coordinate recursively
+    """
     if len(coord)== 1:
-        index = coord[0]
-        array[index] = val
+        array[coord[0]] = value
     else:
-        new_coords = coord[1:]
-        change_val(array[coord[0]], new_coords, val)
+        change_val(array[coord[0]], coord[1:], value)
+
+
 
 def find_neighbors(board, dimensions, coords):
-    changeVars = (-1, 0, 1)
+    """
+    Finds the valid neighbors of a certain coordinate
+    """
+    change_vars = (-1, 0, 1)
     neighbors = []
-    def recursive_func(board, coords, dimensions, i=0):
-        if i == len(coords) - 1:
-            for change in changeVars:
-                possible_neighbor = list(coords[:i]) + [ coords[i]+change ] + list(coords[i+1:])
-                if 0 <= possible_neighbor[i] < dimensions[i]:
-                    neighbors.append(tuple(possible_neighbor))
-        else:
-            for change in changeVars:
-                possible_neighbor = list(coords[:i]) + [ coords[i]+change ] + list(coords[i+1:])
-                if 0 <= possible_neighbor[i] < dimensions[i]:
-                    recursive_func(board, possible_neighbor, dimensions, i+1)
-    recursive_func(board, coords, dimensions)
+    def recurse_nb(board, dimensions, coords, i=0):
+        if i < len(coords) - 1:
+            for change in change_vars:
+                possible_neighbor = list(coords[:i])
+                possible_neighbor.append(coords[i]+change) 
+                possible_neighbor += coords[i+1:]
+                if 0 <= possible_neighbor[i] and possible_neighbor[i] < dimensions[i]:
+                    recurse_nb(board, dimensions, possible_neighbor, i+1)
+        for change in change_vars:
+            possible_neighbor = list(coords[:i])
+            possible_neighbor.append(coords[i]+change) 
+            possible_neighbor += coords[i+1:]
+            if 0 <= possible_neighbor[i] and possible_neighbor[i] < dimensions[i]:
+                neighbors.append(tuple(possible_neighbor))
+    recurse_nb(board, dimensions, coords)
     return set(neighbors)
         
 
@@ -385,7 +430,6 @@ def new_game_nd(dimensions, bombs):
     board:
         [[3, '.'], [3, 3], [1, 1], [0, 0]]
         [['.', 3], [3, '.'], [1, 1], [0, 0]]
-    bombs: 3
     dimensions: (2, 4, 2)
     state: ongoing
     visible:
@@ -397,12 +441,10 @@ def new_game_nd(dimensions, bombs):
     for e in bombs:
         change_val(board, e, '.')
         neighbors = find_neighbors(board, dimensions, e)
-        # print('neighbors ', neighbors)
-        # print('neigbor values', neighboring_values)
         for e in neighbors:
             if get_val(board, e) != '.':
                 change_val(board, e, get_val(board, e)+1)
-    return {'board':board, 'dimensions': dimensions, 'state': 'ongoing', 'visible': visible, 'bombs': len(bombs)}
+    return {'board':board, 'dimensions': dimensions, 'state': 'ongoing', 'visible': visible}
 
 
 def dig_nd(game, coordinates):
@@ -428,7 +470,6 @@ def dig_nd(game, coordinates):
     >>> g = {'dimensions': (2, 4, 2),
     ...      'board': [[[3, '.'], [3, 3], [1, 1], [0, 0]],
     ...                [['.', 3], [3, '.'], [1, 1], [0, 0]]],
-    ...      'bombs': 3,
     ...      'visible': [[[False, False], [False, True], [False, False],
     ...                [False, False]],
     ...               [[False, False], [False, False], [False, False],
@@ -440,9 +481,7 @@ def dig_nd(game, coordinates):
     board:
         [[3, '.'], [3, 3], [1, 1], [0, 0]]
         [['.', 3], [3, '.'], [1, 1], [0, 0]]
-    bombs: 3
     dimensions: (2, 4, 2)
-    revealed: 8
     state: ongoing
     visible:
         [[False, False], [False, True], [True, True], [True, True]]
@@ -450,7 +489,6 @@ def dig_nd(game, coordinates):
     >>> g = {'dimensions': (2, 4, 2),
     ...      'board': [[[3, '.'], [3, 3], [1, 1], [0, 0]],
     ...                [['.', 3], [3, '.'], [1, 1], [0, 0]]],
-    ...      'bombs': 3,
     ...      'visible': [[[False, False], [False, True], [False, False],
     ...                [False, False]],
     ...               [[False, False], [False, False], [False, False],
@@ -462,18 +500,12 @@ def dig_nd(game, coordinates):
     board:
         [[3, '.'], [3, 3], [1, 1], [0, 0]]
         [['.', 3], [3, '.'], [1, 1], [0, 0]]
-    bombs: 3
     dimensions: (2, 4, 2)
-    revealed: 1
     state: defeat
     visible:
         [[False, True], [False, True], [False, False], [False, False]]
         [[False, False], [False, False], [False, False], [False, False]]
     """
-    if game.get('revealed', None) == None:
-        game['revealed'] = 0
-
-    # game['state'] = check_game_state(game['revealed'], game['dimensions'], game['bombs'])
 
     if game['state'] == 'victory' or game['state'] == 'defeat':
         return 0
@@ -481,7 +513,6 @@ def dig_nd(game, coordinates):
     if get_val(game['board'], coordinates) == '.':
         change_val(game['visible'], coordinates, True)
         game['state'] = 'defeat'
-        game['revealed'] += 1
         return 1
 
     if get_val(game['visible'], coordinates):
@@ -503,16 +534,16 @@ def dig_nd(game, coordinates):
                         change_val(game['visible'], neighbor, True)
         else:
             break
-          
-    game['revealed'] += len(visited)
-    if check_game_state(game['revealed'], game['dimensions'], game['bombs']):
-        game['state'] = 'victory'
-    else:
-        game['state'] = 'ongoing'
+    game['state'] = check_game_state(game['board'], game['visible'])
+    
     return len(visited)
 
 
+
 def display_game(game, board, coords, dimensions, i, bool):
+    """
+    Creates a readable representation of the board according to specifications.
+    """
     if len(coords) - 1 == i:
         for curr_index in range(dimensions[i]):
             coords = coords[:i] + [curr_index] + coords[i+1:]

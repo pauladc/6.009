@@ -30,12 +30,18 @@ class HTTPFileNotFoundError(FileNotFoundError):
 # functions for lab 6
 
 def download_single_file(url_http, chunk_size=8192):
+    """
+    Downloads a single file with
+    """
     toYield = ''
     while toYield != b'':
         toYield = url_http.read(chunk_size)
         yield toYield
 
 def check_status(url_http):
+    """
+    Checks the status of a url and raises exception or redirects accordingly
+    """
     while url_http.status != 200:
         if url_http.status == 404:
             raise HTTPFileNotFoundError
@@ -46,7 +52,10 @@ def check_status(url_http):
             url_http = http_response(new_http)
     return url_http
 
-def handle_manifests(url_http):
+def handle_manifests_parts(url_http):
+    """
+    Gets all the parts of the manifest
+    """
     toYield = b''
     next_line = ''
     while next_line != b'':
@@ -60,23 +69,26 @@ def handle_manifests(url_http):
         toYield += next_line
     yield toYield
 
-def inside_manifest(manifest):
+def inside_manifest_part(part):
+    """
+    Gets all alternative urls from said part
+    """
     check = True
-    manifest = str(manifest)[2:-1]
+    part = str(part)[2:-1]
     last = 0
     no_new_line = True
     while check:
         checker = ''
-        for i in range(last, len(manifest)):
-            if i == len(manifest)-2:
+        for i in range(last, len(part)):
+            if i == len(part)-2:
                 check = False
-            elif manifest[i:i+2] == '\\n':
+            elif part[i:i+2] == '\\n':
                 last, no_new_line = i + 2, False
                 break
-            checker += manifest[i]
+            checker += part[i]
         if no_new_line:
-            if manifest[-2:] == '\\n':
-                checker = manifest[:-2]
+            if part[-2:] == '\\n':
+                checker = part[:-2]
         try:
             checker = check_status(http_response(checker.encode('utf-8')))
             check = False
@@ -85,8 +97,11 @@ def inside_manifest(manifest):
     yield checker
 
 def concat_manifest(url_http, chunk_size=8192):
-    for part in handle_manifests(url_http):
-        for url in inside_manifest(part):
+    """
+    Concatonates all the parts of a manifest
+    """
+    for part in handle_manifests_parts(url_http):
+        for url in inside_manifest_part(part):
             toYield = ''
             while toYield != b'':
                 toYield = url.read(chunk_size)

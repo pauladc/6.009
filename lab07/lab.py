@@ -44,8 +44,15 @@ class Var(Symbol):
             return Num(1)
         else:
             return Num(0)
+
     def simplify(self):
         return self
+
+    def eval(self, mapping):
+        try:
+            return mapping[self.name]
+        except:
+            return 1
 
 
 
@@ -69,12 +76,14 @@ class Num(Symbol):
         return Num(0)
 
     def simplify(self):
+        return self
+
+    def eval(self, mapping):
         return self.n
 
 
 class BinOp(Symbol):
     def __init__(self, left, right):
-
         if isinstance(right, Symbol):
             self.right = right
         else:
@@ -95,55 +104,66 @@ class Add(BinOp):
     def __init__(self, left, right):
         super().__init__(left, right)
         self.rank = 0
+
     def __str__(self):
         return str(self.left) + " + " + str(self.right)
+
     def __repr__(self):   
         return "Add(" + repr(self.left) + "," + repr(self.right) + ")"
+
     def deriv(self, value):
         return self.left.deriv(value) + self.right.deriv(value)
+
     def simplify(self):
         self.left = self.left.simplify()
         self.right = self.right.simplify()
-        if str(self.left)== '0':
+        print(type(self.left), type(self.right))
+        if type(self.left)== Num and self.left.n == 0:
             return self.right
-        elif str(self.right) == '0':
+        elif type(self.right) == Num and self.right.n == 0:
             return self.left
+        elif type(self.right) == Num and type(self.left) == Num:
+            return Num(self.right.n + self.left.n)
         else:
-            if repr(self.right)[0:3] != 'Var' and repr(self.left)[0:3] != 'Var':
-                return Num(self.left + self.right)
-            else:
-                return self.left + self.right
+            return self.left + self.right
+
+    def eval(self, mapping):
+        return self.left.eval(mapping) + self.right.eval(mapping)
 
 class Sub(BinOp):
     def __init__(self, left, right):
         super().__init__(left, right)
         self.rank = 1
+
     def __str__(self):
         if self.right.rank is not None and self.right.rank < 2:
             return str(self.left) + " - (" + str(self.right) + ")"
         return str(self.left) + " - " + str(self.right)
+
     def __repr__(self):
-        return "Sub(" + repr(self.left) + "," + repr(self.right) + ")" 
+        return "Sub(" + repr(self.left) + "," + repr(self.right) + ")"
+
     def deriv(self, value):
         return self.left.deriv(value) - self.right.deriv(value)
+
     def simplify(self):
         self.left = self.left.simplify()
         self.right = self.right.simplify()
-        if str(self.left) == '0':
-            return self.right
-        elif str(self.right) == '0':
+        if type(self.right) == Num and self.right.n == 0:
             return self.left
+        elif type(self.right)==Num and type(self.left)==Num:
+            return Num(self.left.n - self.right.n)
         else:
-            print(repr(self.right), repr(self.left))
-            if repr(self.right)[0:3] != 'Var' and repr(self.left)[0:3] != 'Var':
-                return Num(self.left - self.right)
-            else:
-                return self.left - self.right 
+            return self.left - self.right
+
+    def eval(self, mapping):
+        return self.left.eval(mapping) - self.right.eval(mapping)
 
 class Mul(BinOp):
     def __init__(self, left, right):
         super().__init__(left, right)
         self.rank = 2
+
     def __str__(self):
         if self.right.rank is not None and self.left.rank is not None and self.left.rank < 2 and self.right.rank < 2:
             return "(" + str(self.left) + ") * (" + str(self.right) + ")"
@@ -152,26 +172,29 @@ class Mul(BinOp):
         elif self.right.rank is not None and self.right.rank < 2:
             return str(self.left) + " * (" + str(self.right) + ")"
         return str(self.left) + " * " + str(self.right)
+
     def __repr__(self):
         return "Mul(" + repr(self.left) + "," + repr(self.right) + ")" 
+
     def deriv(self, value):
         return (self.left.deriv(value) * self.right) + (self.right.deriv(value) * self.left)
+
     def simplify(self):
         self.left = self.left.simplify()
         self.right = self.right.simplify()
-        print(self.left)
-        print(self.right)
-        if str(self.left)== '0' or str(self.right) == '0':
+        if type(self.left) == Num and self.left.n == 0 or type(self.right) == Num and self.right.n == 0:
             return Num(0)
-        elif str(self.right) == '1' or str(self.right) == '1.0':
+        elif type(self.right) == Num and int(self.right.n) == 1:
             return self.left
-        elif str(self.left) == '1' or str(self.left) == '1.0':
+        elif type(self.left) == Num and int(self.left.n) == 1:
             return self.right
+        elif type(self.left) == Num and type(self.right) == Num:
+            return Num(self.left.n*self.right.n)
         else:
-            if repr(self.right)[0:3] != 'Var' and repr(self.left)[0:3] != 'Var':
-                return Num(self.left * self.right)
-            else:
-                return self.left * self.right
+            return self.right * self.left
+
+    def eval(self, mapping):
+        return self.left.eval(mapping) * self.right.eval(mapping)
 
             
 
@@ -179,6 +202,7 @@ class Div(BinOp):
     def __init__(self, left, right):
         super().__init__(left, right)
         self.rank = 3
+
     def __str__(self):
         if self.right.rank is not None and self.right.rank < 2 and self.left.rank is not None and self.left.rank < 2:
             return "(" + str(self.left) + ") / (" + str(self.right) + ")"
@@ -189,27 +213,31 @@ class Div(BinOp):
         elif self.left.rank is not None and self.left.rank < 2:
             return "(" + str(self.left) + ") / " + str(self.right)
         return str(self.left) + " / " + str(self.right)
+
     def __repr__(self):
         return "Div(" + repr(self.left) + "," + repr(self.right) + ")" 
+
     def deriv(self, value):
         return ((self.left.deriv(value)*self.right) - (self.right.deriv(value)*self.left)) / ((self.right)* (self.right))
+
     def simplify(self):
         self.left = self.left.simplify()
         self.right = self.right.simplify()
-        if str(self.left) == '0':
+        if type(self.left) == Num and self.left.n ==0:
             return Num(0)
-        elif str(self.right) == '1' or str(self.right) == '1.0':
+        elif type(self.right) == Num and int(self.right.n) == 1:
             return self.left
+        elif type(self.left) == Num and type(self.right) == Num:
+            return Num(self.left.n/self.right.n)
         else:
-            if repr(self.right)[0:3] != 'Var' and repr(self.left)[0:3] != 'Var':
-                print('getting num')
-                return Num(self.left/ self.right)
-            else:
-                return self.left/ self.right
+            return self.left/ self.right
+
+    def eval(self, mapping):
+        return self.left.eval(mapping) / self.right.eval(mapping)
 
 
 
 if __name__ == "__main__":
     # doctest.testmod()
-    print(Sub(Add(Num(70), Num(50)), Num(80)).simplify())
+    print(Add(Num(0), Var('x')).simplify())
     # ("Add(Num(0), Mul(Var('y'), Num(2)))", '0 + y * 2')

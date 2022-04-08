@@ -14,6 +14,7 @@ root = tkinter.Tk()
 tcl = tkinter.Tcl()
 
 URL = sys.argv[1]
+# URL = 'http://mit.edu/6.009/www/lab6_examples/cornsnake.jpg.parts'
 try:
     delta_t = int(sys.argv[2])
 except:
@@ -48,7 +49,7 @@ def text_viewer():
     tcl.after(0, update_text)
 
 
-def image_viewer():
+def image_viewer(URL):
     d = download_file(URL)
     canvas = tkinter.Canvas(root, height=480, width=640)
     canvas.pack(fill='both', expand=True)
@@ -83,7 +84,12 @@ def image_viewer():
     tcl.after(0, update_animation)
 
 if any(i in URL for i in ('.png', '.jpg', '.gif', '.bmp', '.ppm', '.pgm')):
-    image_viewer()
+    image_viewer(URL)
 else:
     text_viewer()
 root.mainloop()
+
+URL = 'http://mit.edu/6.009/www/lab6_examples/cornsnake.jpg.parts'
+snake = Image.open(image_viewer(URL))
+
+snake1 = snake.save('snake.png')

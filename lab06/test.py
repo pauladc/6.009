@@ -93,6 +93,8 @@ def test_cache():
     )
     result = b"".join(stream)
     expected = 10 * RESULTS["test_caching.1"]
+    print('expected ' , len(expected), 'mine ', len(result))
+    # print('results ', RESULTS["test_caching.1"])
     assert result == expected
     assert time.time() - t < 15, "Test took too long."
 
@@ -140,6 +142,8 @@ def test_file_sequence():
     t = time.time()
     ix = 0
     for ix, file_ in enumerate(lab.files_from_sequence(gen)):
+        print(len(RESULTS["test_file_sequence"][ix]))
+        print(len(file_))
         assert file_ == RESULTS["test_file_sequence"][ix], "File %d in the sequence was not correctly extracted." % ix
         if ix == 4:
             assert time.time() - t < 0.5, "Yielding first 5 files took too long"

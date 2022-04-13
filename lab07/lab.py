@@ -72,7 +72,7 @@ class Var(Symbol):
         try:
             return mapping[self.name]
         except:
-            return 1
+            raise ValueError ('variable not found')
 
 
 
@@ -421,6 +421,7 @@ def parse(tokens):
 
 if __name__ == "__main__":
     # doctest.testmod()
-    # print(Add(Num(0), Var('x')).simplify())
-    # ("Add(Num(0), Mul(Var('y'), Num(2)))", '0 + y * 2')
+    print((Mul(Add(Num(0), Var('x')), 1)).simplify())
     print(tokenize('2**4'))
+    print(Pow(Add(Num(4), Var('x')), 5))
+    print(Add(Div(Mul(Num(5),Var('x')), Num(7)), Var('y')))

@@ -62,6 +62,7 @@ def run_continued_evaluations(ins):
 
 def compare_outputs(x, y, msg):
     if x['ok']:
+        print('comparing outputs', x, y)
         assert y['ok'], msg + f'\n\nExpected an exception ({y.get("type", None)})'
         if isinstance(x['output'], (int, float)):
             assert type(x['output']) == type(y['output']), msg + f'\n\nOutput has incorrect type (expected {type(y.get("output", None))} but got {type(x.get("output", None))}'

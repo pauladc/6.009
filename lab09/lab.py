@@ -1,17 +1,10 @@
-#!/usr/bin/env python3
-"""6.009 Lab 8: Carlae (LISP) Interpreter"""
+"""6.009 Lab 9: Carlae Interpreter Part 2"""
 
-from ast import arguments
-import doctest
+import sys
+sys.setrecursionlimit(10_000)
 
-# NO ADDITIONAL IMPORTS!
-
-
-###########################
-# Carlae-related Exceptions #
-###########################
-
-
+# KEEP THE ABOVE LINES INTACT, BUT REPLACE THIS COMMENT WITH YOUR lab.py FROM
+# THE PREVIOUS LAB, WHICH SHOULD BE THE STARTING POINT FOR THIS LAB.
 class CarlaeError(Exception):
     """
     A type of exception to be raised if there is an error with a Carlae

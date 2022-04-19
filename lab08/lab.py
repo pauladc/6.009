@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """6.009 Lab 8: Carlae (LISP) Interpreter"""
 
-from ast import arguments
 import doctest
 
 # NO ADDITIONAL IMPORTS!

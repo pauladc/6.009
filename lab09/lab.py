@@ -180,7 +180,11 @@ carlae_builtins = {
     ">": lambda args: dec(args),
     "<=": lambda args: noninc(args),
     ">=": lambda args: nondec(args),
-    "not": lambda args: notcar(args)
+    "not": lambda args: notcar(args),
+    "pair": lambda args: pair(args),
+    "head": lambda args: head(args),
+    "tail": lambda args: tail(args),
+    "nil" : None
 }
 
 def mult(args):
@@ -243,6 +247,18 @@ def pair(args):
     else:
         raise CarlaeEvaluationError
 
+def head(args):
+    if type(args) != Pair or len(args) != 1:
+        raise CarlaeEvaluationError
+    else:
+        return args.get_head()
+
+def tail(args):
+    if type(args) != Pair or len(args) != 1:
+        raise CarlaeEvaluationError
+    else:
+        return args.get_tail()
+
 
 ###########
 # Classes #
@@ -302,6 +318,13 @@ class Pair():
     def __init__(self, h, t):
         self.head = h
         self.tail = t
+
+    def get_head(self):
+        return self.head
+
+    def get_tail(self):
+        return self.tail
+
     
 
 

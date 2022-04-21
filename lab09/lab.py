@@ -174,7 +174,13 @@ carlae_builtins = {
     "+": sum,
     "-": lambda args: -args[0] if len(args) == 1 else (args[0] - sum(args[1:])),
     "*": lambda args: args[0] if len(args) == 1 else mult(args),
-    "/": lambda args: args[0] if len(args) == 1 else div(args)
+    "/": lambda args: args[0] if len(args) == 1 else div(args),
+    "=?": lambda args: equal(args),
+    "<": lambda args: inc(args),
+    ">": lambda args: dec(args),
+    "<=": lambda args: noninc(args),
+    ">=": lambda args: nondec(args),
+    "not": lambda args: notcar(args)
 }
 
 def mult(args):
@@ -188,6 +194,55 @@ def div(args):
     for e in args[1:]:
         result /= e
     return result
+def equal(args):
+    if len(set(args)) == 1:
+        return True
+    return False
+
+def inc(args):
+    prev = -100000000000
+    for e in args:
+        if prev >= e:
+            return False
+        prev = e
+    return True
+
+def dec(args):
+    prev = 100000000000
+    for e in args:
+        if prev <= e:
+            return False
+        prev = e
+    return True
+
+def noninc(args):
+    prev = -100000000000
+    for e in args:
+        if prev > e:
+            return False
+        prev = e
+    return True
+
+def nondec(args):
+    prev = 100000000000
+    for e in args:
+        if prev < e:
+            return False
+        prev = e
+    return True
+
+def notcar(args):
+    if len(args) == 1:
+        return not args[0]
+    else:
+        raise CarlaeEvaluationError
+
+def pair(args):
+    if len(args) == 2:
+        return Pair(args[0], args[1])
+    else:
+        raise CarlaeEvaluationError
+
 
 ###########
 # Classes #
@@ -243,6 +298,13 @@ class Function():
             temp[self.params[i]] = args[i]
         return evaluate(self.expression, Environment(self.env, temp))
 
+class Pair():
+    def __init__(self, h, t):
+        self.head = h
+        self.tail = t
+    
+
+
 
 
 
@@ -272,6 +334,16 @@ def evaluate(tree, env = None):
     #looks up the value associated with a variable
     elif type(tree) == str:
         return env.look_up_var(tree)
+    elif tree[0] == 'and':
+        for elem in tree[1:]:
+            if evaluate(elem, env) != True:
+                return False
+        return True
+    elif tree[0] == 'or':
+        for elem in tree[1:]:
+            if evaluate(elem, env) == True:
+                return True
+        return False
 
     #assigns a value to a variable (could assign function or expression)
     elif tree[0] == ':=':
@@ -286,6 +358,12 @@ def evaluate(tree, env = None):
             new_value = evaluate(tree[2], env)
         env.define_var(name, new_value)
         return new_value
+    elif tree[0] == 'if':
+        evalt = evaluate(tree[1], env)
+        if evalt:
+            return evaluate(tree[2], env)
+        else:
+            return evaluate(tree[3], env)
 
     #creates a function object if it detects the function keyword
     elif tree[0] == 'function':
@@ -336,4 +414,5 @@ if __name__ == "__main__":
 
     # uncommenting the following line will run doctests from above
     # doctest.testmod()
-    REPL()
+    # REPL()
+    print(pair([3, 4, 5]))

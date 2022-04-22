@@ -444,7 +444,16 @@ class Environment():
         Assignns a value to a variable
         """
         self.bindings[var] = value
-        # print(self.bindings)
+
+    def set_bang(self, var, value):
+        try:
+            if var in self.bindings:
+                print('first iter')
+                self.bindings[var] = value
+            else:
+                self.parent.set_bang(var, value)
+        except:
+            raise CarlaeNameError
 
 class Function():
     def __init__(self, env = None, parameters = None, expression= None):
@@ -545,6 +554,11 @@ def evaluate(tree, env = None):
                 new_env.define_var(var, evaluated)
             return evaluate(tree[2], new_env)
 
+        elif tree[0] == 'set!':
+            evaluated = evaluate(tree[2], env)
+            env.set_bang(tree[1], evaluated)
+            return evaluated
+
         #evaluates conditionals
         elif tree[0] == 'if':
             evalt = evaluate(tree[1], env)
@@ -624,13 +638,9 @@ if __name__ == "__main__":
 
     # uncommenting the following line will run doctests from above
     # doctest.testmod())
-    # print(parse([]))
-    # print(repr(build_lst([3, 4, 5])))
-    # REPL()
-    # print(islist(Pair(1, Pair(2, Pair(3, Pair(4, None))))))
-    # try:
-    #     for filename in sys.argv[1:]:
-    #         evaluate_file(filename)
-    # except:
-    #     pass
+    try:
+        for filename in sys.argv[1:]:
+            evaluate_file(filename)
+    except:
+        pass
     REPL()

@@ -194,7 +194,8 @@ carlae_builtins = {
     "concat": lambda args: concat(args),
     "map": lambda args: map_fn(args),
     "filter": lambda args: filter_fn(args),
-    "reduce": lambda args: reduce_fn(args)
+    "reduce": lambda args: reduce_fn(args),
+    "begin": lambda args: begin(args)
 }
 
 def mult(args):
@@ -353,13 +354,6 @@ def map_fn(args):
     fn, nxt = args[0], args[1]
     return apply_func(fn, nxt)
 
-    # lst = []
-    # while (nxt != None):
-    #     if type(nxt) != Pair:
-    #         raise CarlaeEvaluationError
-    #     lst.append(fn([nxt.get_head()]))
-    #     nxt = nxt.get_tail()
-    # return build_lst(lst)
 
 def filter_fn(args):
     """
@@ -393,17 +387,17 @@ def reduce_fn(args):
     if len(args) != 3:
         raise CarlaeEvaluationError
     fn = args[0]
-    print(fn)
     nxt = args[1]
-    print(nxt)
     initial = args[2]
-    print(initial)
     while (nxt != None):
         if type(nxt) != Pair:
             raise CarlaeEvaluationError
         initial = fn([initial, nxt.get_head()])
         nxt = nxt.get_tail()
     return initial
+
+def begin(args):
+    return args[-1]
 
 
 

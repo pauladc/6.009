@@ -101,7 +101,6 @@ def tokenize(source):
     for e in split_lst:
         #ignores comments 
         if '#' in e:
-            print('in working lst if')
             e = e[:e.index('#')]
         elif len(e) == 0:
             split_lst.remove(e)
@@ -206,22 +205,34 @@ carlae_builtins = {
 }
 
 def mult(args):
+    """
+    Multiplies arguments
+    """
     result = 1
     for e in args:
         result *= e
     return result
 
 def div(args):
+    """
+    Divides arguments
+    """
     result = args[0]
     for e in args[1:]:
         result /= e
     return result
 def equal(args):
+    """
+    Checks if arguments are equal
+    """
     if len(set(args)) == 1:
         return True
     return False
 
 def inc(args):
+    """
+    Checks if arguments are in increasing order
+    """
     prev = -100000000000
     for e in args:
         if prev >= e:
@@ -230,6 +241,9 @@ def inc(args):
     return True
 
 def dec(args):
+    """
+    Checks if arguments are in decreasing order
+    """
     prev = 100000000000
     for e in args:
         if prev <= e:
@@ -238,6 +252,9 @@ def dec(args):
     return True
 
 def noninc(args):
+    """
+    Checks if arguments are in nonincreasing order
+    """
     prev = -100000000000
     for e in args:
         if prev > e:
@@ -246,6 +263,9 @@ def noninc(args):
     return True
 
 def nondec(args):
+    """
+    Checks if arguments are in nondecreasing order
+    """
     prev = 100000000000
     for e in args:
         if prev < e:
@@ -254,36 +274,54 @@ def nondec(args):
     return True
 
 def notcar(args):
+    """
+    Negates arguments passed into function
+    """
     if len(args) == 1:
         return not args[0]
     else:
         raise CarlaeEvaluationError
 
 def pair(args):
+    """
+    Creates an instance of pair if the arguments are correct
+    """
     if len(args) == 2:
         return Pair(args[0], args[1])
     else:
         raise CarlaeEvaluationError
 
 def head(args):
+    """
+    Returns the head of pair
+    """
     if len(args) != 1 or type(args[0]) != Pair:
         raise CarlaeEvaluationError
     else:
         return args[0].get_head()
 
 def tail(args):
+    """
+    Returns the tail of pair
+    """
     if len(args) != 1 or type(args[0]) != Pair:
         raise CarlaeEvaluationError
     else:
         return args[0].get_tail()
 
 def build_lst(args):
+    """
+    Builds a linked list of Pairs from a python list
+    """
     if len(args) == 0:
         return None
     else:
         return Pair(args[0], build_lst(args[1:]))
 
 def islist(args):
+    """
+    Checks if arguments constitute a linked list
+    """
     if type(args) == list:
         return islist(args[0])
     elif type(args) == Pair:
@@ -293,6 +331,9 @@ def islist(args):
     return False
 
 def lenlist(args, count):
+    """
+    Returns the length of a linked list
+    """
     try:
         if args == None:
             return 0
@@ -304,6 +345,9 @@ def lenlist(args, count):
         raise CarlaeEvaluationError
 
 def indexlst(args, count):
+    """
+    Returns the head located at a certain index in a linked list
+    """
     try:
         if args == None or count < 0:
             raise CarlaeEvaluationError
@@ -349,6 +393,9 @@ def map_fn(args):
     containing the results of applying the given function to each element of the given list.
     """
     def apply_func(fn, args):
+        """
+        Recurses through list to apply the function to the head of the pair
+        """
         if args == None:
             return None
         elif type(args) != Pair:
@@ -368,6 +415,9 @@ def filter_fn(args):
     only the elements of the given list for which the given function returns true.
     """
     def filter_helper(fn, args):
+        """
+        Recurses through list to check if  pair meets condition
+        """
         if args == None:
             return None
         elif type(args) != Pair:
@@ -404,6 +454,9 @@ def reduce_fn(args):
     return initial
 
 def begin(args):
+    """
+    Returns the last argument to be evaluated
+    """
     return args[-1]
 
 
@@ -434,6 +487,9 @@ class Environment():
             #var has not been assigned
             raise CarlaeNameError
     def delete(self, var):
+        """
+        Deletes a variable from existing Environment bindings
+        """
         if var in self.bindings:
                 return self.bindings.pop(var)
         else:
@@ -446,9 +502,11 @@ class Environment():
         self.bindings[var] = value
 
     def set_bang(self, var, value):
+        """
+        Modifies the value of a variable if it exists in current or parent environments bindings
+        """
         try:
             if var in self.bindings:
-                print('first iter')
                 self.bindings[var] = value
             else:
                 self.parent.set_bang(var, value)
@@ -487,9 +545,15 @@ class Pair():
         self.tail = tail
 
     def get_head(self):
+        """
+        Getter method for head
+        """
         return self.head
 
     def get_tail(self):
+        """
+        Getter method for tail
+        """
         return self.tail
 
 
@@ -512,6 +576,7 @@ def evaluate(tree, env = None):
     if env == None:
         env = Environment(Environment(None, carlae_builtins), {})
 
+    #assings a value of None to Carlae's nil
     if tree == 'nil':
         return None
 
@@ -544,9 +609,11 @@ def evaluate(tree, env = None):
             env.define_var(name, new_value)
             return new_value
 
+        #adds support for deleting arguments
         elif tree[0] == 'del':
             return env.delete(tree[1])
 
+        #creates a new environment and evaluates expression in new env
         elif tree[0] == 'let':
             new_env = Environment(env, {})
             for var, val in tree[1]:
@@ -554,6 +621,7 @@ def evaluate(tree, env = None):
                 new_env.define_var(var, evaluated)
             return evaluate(tree[2], new_env)
 
+        #modifies the value of a variable in (parent) environment
         elif tree[0] == 'set!':
             evaluated = evaluate(tree[2], env)
             env.set_bang(tree[1], evaluated)
@@ -571,12 +639,14 @@ def evaluate(tree, env = None):
         elif tree[0] == 'function':
             return Function(env, tree[1], tree[2])
 
+        #checks that all arguments meet condition
         elif tree[0] == 'and':
             for elem in tree[1:]:
                 if evaluate(elem, env) != True:
                     return False
             return True
-
+        
+        #checks that one of the arguments meets the condition
         elif tree[0] == 'or':
             for elem in tree[1:]:
                 if evaluate(elem, env) == True:
@@ -602,7 +672,6 @@ def REPL(env = None):
         user_input = input('in> ')
         if user_input != 'EXIT':
             try:
-                # print(tokenize(user_input))
                 print('out> ', evaluate(parse(tokenize(user_input)), env))
             except:
                 print('an exception has been raised')
@@ -638,6 +707,8 @@ if __name__ == "__main__":
 
     # uncommenting the following line will run doctests from above
     # doctest.testmod())
+#     (:= (range start stop step)
+#(if (=? start stop) nil (if (< (+ start step) stop) (range (+ start step) stop step) start)))
     try:
         for filename in sys.argv[1:]:
             evaluate_file(filename)

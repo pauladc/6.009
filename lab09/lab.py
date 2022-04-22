@@ -1,6 +1,7 @@
 """6.009 Lab 9: Carlae Interpreter Part 2"""
 
 import sys
+from xxlimited import new
 sys.setrecursionlimit(10_000)
 
 # KEEP THE ABOVE LINES INTACT, BUT REPLACE THIS COMMENT WITH YOUR lab.py FROM
@@ -175,6 +176,8 @@ carlae_builtins = {
     "-": lambda args: -args[0] if len(args) == 1 else (args[0] - sum(args[1:])),
     "*": lambda args: args[0] if len(args) == 1 else mult(args),
     "/": lambda args: args[0] if len(args) == 1 else div(args),
+    "@t": True,
+    "@f": False,
     "=?": lambda args: equal(args),
     "<": lambda args: inc(args),
     ">": lambda args: dec(args),
@@ -184,7 +187,14 @@ carlae_builtins = {
     "pair": lambda args: pair(args),
     "head": lambda args: head(args),
     "tail": lambda args: tail(args),
-    "nil" : None
+    "list": lambda args: build_lst(args),
+    "list?": lambda args: islist(args),
+    "length": lambda args: lenlist(args[0], 0),
+    "nth": lambda args: indexlst(args[0], args[1]),
+    "concat": lambda args: concat(args),
+    "map": None,
+    "filter": None,
+    "reduce": None
 }
 
 def mult(args):
@@ -248,16 +258,64 @@ def pair(args):
         raise CarlaeEvaluationError
 
 def head(args):
-    if type(args) != Pair or len(args) != 1:
+    if len(args) != 1 or type(args[0]) != Pair:
         raise CarlaeEvaluationError
     else:
-        return args.get_head()
+        return args[0].get_head()
 
 def tail(args):
-    if type(args) != Pair or len(args) != 1:
+    if len(args) != 1 or type(args[0]) != Pair:
         raise CarlaeEvaluationError
     else:
-        return args.get_tail()
+        return args[0].get_tail()
+
+def build_lst(args):
+    if len(args) == 0:
+        return None
+    else:
+        return Pair(args[0], build_lst(args[1:]))
+
+def islist(args):
+    if type(args[0]) == Pair and args[0].get_tail() != None:
+        return True
+    return False
+
+def lenlist(args, count):
+    try:
+        if args == None:
+            return 0
+        elif args.get_tail() != None:
+            return lenlist(args.get_tail(), count + 1)
+        else:
+            return count + 1
+    except:
+        raise CarlaeEvaluationError
+
+def indexlst(args, count):
+    try:
+        if args == None or count < 0:
+            raise CarlaeEvaluationError
+        if count == 0:
+            return args.get_head()
+        elif args.get_tail() != None:
+            return indexlst(args.get_tail(), count - 1)
+        else:
+            raise CarlaeEvaluationError
+    except:
+        raise CarlaeEvaluationError
+
+def concat(args = None):
+    lst = []
+    for l in args:
+        nxt = l
+        while (nxt != None):
+            if type(nxt) != Pair:
+                raise CarlaeEvaluationError
+            head = nxt.get_head()
+            lst.append(head)
+            nxt = nxt.get_tail()
+    return build_lst(lst)
+
 
 
 ###########
@@ -315,21 +373,19 @@ class Function():
         return evaluate(self.expression, Environment(self.env, temp))
 
 class Pair():
-    def __init__(self, h, t):
-        self.head = h
-        self.tail = t
+
+    def __init__(self, head, tail):
+        """"
+        Initializes a pair
+        """
+        self.head = head
+        self.tail = tail
 
     def get_head(self):
         return self.head
 
     def get_tail(self):
         return self.tail
-
-    
-
-
-
-
 
 
 
@@ -351,51 +407,62 @@ def evaluate(tree, env = None):
     if env == None:
         env = Environment(Environment(None, carlae_builtins), {})
 
+    if tree == 'nil':
+        return None
+
     if type(tree) == int or type(tree) == float:
         return tree
 
     #looks up the value associated with a variable
     elif type(tree) == str:
         return env.look_up_var(tree)
-    elif tree[0] == 'and':
-        for elem in tree[1:]:
-            if evaluate(elem, env) != True:
-                return False
-        return True
-    elif tree[0] == 'or':
-        for elem in tree[1:]:
-            if evaluate(elem, env) == True:
-                return True
-        return False
 
-    #assigns a value to a variable (could assign function or expression)
-    elif tree[0] == ':=':
-        name = tree[1]
-        #assigning function
-        if type(tree[1]) == list:
-            name = tree[1][0]
-            args = tree[1][1:]
-            new_value = evaluate(['function', args, tree[2]], env)
-        #assigning expression
-        else:
-            new_value = evaluate(tree[2], env)
-        env.define_var(name, new_value)
-        return new_value
-    elif tree[0] == 'if':
-        evalt = evaluate(tree[1], env)
-        if evalt:
-            return evaluate(tree[2], env)
-        else:
-            return evaluate(tree[3], env)
-
-    #creates a function object if it detects the function keyword
-    elif tree[0] == 'function':
-        return Function(env, tree[1], tree[2])
 
     #evaluates an expression recursively, checking the values associated with all vars
     elif type(tree) == list:
+        if len(tree) == 0:
+            raise CarlaeEvaluationError
         if type(tree[0]) == int or type(tree[0]) == float:
             raise CarlaeEvaluationError
+
+        #assigns a value to a variable (could assign function or expression)
+        elif tree[0] == ':=':
+            name = tree[1]
+            #assigning function
+            if type(tree[1]) == list:
+                name = tree[1][0]
+                args = tree[1][1:]
+                new_value = evaluate(['function', args, tree[2]], env)
+            #assigning expression
+            else:
+                new_value = evaluate(tree[2], env)
+            env.define_var(name, new_value)
+            return new_value
+
+        #evaluates conditionals
+        elif tree[0] == 'if':
+            evalt = evaluate(tree[1], env)
+            if evalt:
+                return evaluate(tree[2], env)
+            else:
+                return evaluate(tree[3], env)
+
+        #creates a function object if it detects the function keyword
+        elif tree[0] == 'function':
+            return Function(env, tree[1], tree[2])
+
+        elif tree[0] == 'and':
+            for elem in tree[1:]:
+                if evaluate(elem, env) != True:
+                    return False
+            return True
+
+        elif tree[0] == 'or':
+            for elem in tree[1:]:
+                if evaluate(elem, env) == True:
+                    return True
+            return False
+
         lam_fnc = evaluate(tree[0], env)
         arguments = [evaluate(args, env) for args in tree[1:]]
         return lam_fnc(arguments)
@@ -415,6 +482,7 @@ def REPL(env = None):
         user_input = input('in> ')
         if user_input != 'EXIT':
             try:
+                # print(tokenize(user_input))
                 print('out> ', evaluate(parse(tokenize(user_input)), env))
             except:
                 print('an exception has been raised')
@@ -436,6 +504,8 @@ if __name__ == "__main__":
     # run (not when this module is imported)
 
     # uncommenting the following line will run doctests from above
-    # doctest.testmod()
-    # REPL()
-    print(pair([3, 4, 5]))
+    # doctest.testmod())
+    # print(parse([]))
+    # print(repr(build_lst([3, 4, 5])))
+    REPL()
+    # print(islist(Pair(1, Pair(2, Pair(3, Pair(4, None))))))

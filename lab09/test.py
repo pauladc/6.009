@@ -132,6 +132,7 @@ def do_raw_continued_evaluations(n):
                 results.append({'expression': line.strip(), 'ok': False, 'type': 'CarlaeSyntaxError', 'when': 'parse'})
                 continue
             out = t(*((parsed, ) if env is None else (parsed, env)))
+            # print('out is ', out)
             if out['ok']:
                 env = out['output'][1]
             if out['ok']:
@@ -146,6 +147,7 @@ def do_raw_continued_evaluations(n):
             results.append(out)
     for ix, (result, exp) in enumerate(zip(results, expected)):
         msg = f"for line {ix+1} in test_inputs/%02d.carlae:\n    {result['expression']}" % n
+        # print('expected is ', exp)
         compare_outputs(result, exp, msg=msg)
 
 

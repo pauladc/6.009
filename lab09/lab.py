@@ -1,7 +1,7 @@
 """6.009 Lab 9: Carlae Interpreter Part 2"""
 
 import sys
-from xxlimited import new
+
 sys.setrecursionlimit(10_000)
 
 # KEEP THE ABOVE LINES INTACT, BUT REPLACE THIS COMMENT WITH YOUR lab.py FROM
@@ -192,9 +192,9 @@ carlae_builtins = {
     "length": lambda args: lenlist(args[0], 0),
     "nth": lambda args: indexlst(args[0], args[1]),
     "concat": lambda args: concat(args),
-    "map": None,
-    "filter": None,
-    "reduce": None
+    "map": lambda args: map_fn(args),
+    "filter": lambda args: filter_fn(args),
+    "reduce": lambda args: reduce_fn(args)
 }
 
 def mult(args):
@@ -276,7 +276,11 @@ def build_lst(args):
         return Pair(args[0], build_lst(args[1:]))
 
 def islist(args):
-    if type(args[0]) == Pair and args[0].get_tail() != None:
+    if type(args) == list:
+        return islist(args[0])
+    elif type(args) == Pair:
+        return islist(args.get_tail())
+    elif args == None:
         return True
     return False
 
@@ -304,17 +308,102 @@ def indexlst(args, count):
     except:
         raise CarlaeEvaluationError
 
+def copy(args):
+    """
+    Makes a copy of the pair.
+    """
+    if type(args) != Pair:
+        raise CarlaeEvaluationError
+    elif args.get_tail() == None: 
+        return Pair(args.get_head(), args.get_tail())
+    return Pair(args.get_head(), copy(args.get_tail()))
+
 def concat(args = None):
-    lst = []
-    for l in args:
-        nxt = l
-        while (nxt != None):
-            if type(nxt) != Pair:
-                raise CarlaeEvaluationError
-            head = nxt.get_head()
-            lst.append(head)
-            nxt = nxt.get_tail()
-    return build_lst(lst)
+    """
+    Returns a new list representing the concatenation of lists
+    """
+    copied_args = [copy(e) for e in args if e != None]
+    if len(copied_args) == 0: 
+        return None
+    elif len(copied_args) == 1: 
+        return Pair(copied_args[0].head, copied_args[0].tail) 
+    head = curr = copied_args[0]
+    for e in copied_args[1:]:
+        while curr.get_tail() != None:    
+            curr = curr.get_tail()
+        curr.tail = e 
+    return head
+
+
+def map_fn(args):
+    """
+    Takes a function and a list as arguments, and it returns a new list 
+    containing the results of applying the given function to each element of the given list.
+    """
+    def apply_func(fn, args):
+        if args == None:
+            return None
+        elif type(args) != Pair:
+            raise CarlaeEvaluationError
+        elif args.get_tail() == None: 
+            return Pair(fn([args.get_head()]), None)
+        return Pair(fn([args.get_head()]), apply_func(fn, args.get_tail()))
+    if len(args) != 2:
+        raise CarlaeEvaluationError
+    fn, nxt = args[0], args[1]
+    return apply_func(fn, nxt)
+
+    # lst = []
+    # while (nxt != None):
+    #     if type(nxt) != Pair:
+    #         raise CarlaeEvaluationError
+    #     lst.append(fn([nxt.get_head()]))
+    #     nxt = nxt.get_tail()
+    # return build_lst(lst)
+
+def filter_fn(args):
+    """
+    Takes a function and a list as arguments, and it returns a new list containing 
+    only the elements of the given list for which the given function returns true.
+    """
+    def filter_helper(fn, args):
+        if args == None:
+            return None
+        elif type(args) != Pair:
+            raise CarlaeEvaluationError
+        elif fn([args.get_head()]):
+            if args.get_tail() == None: 
+                return Pair(args.get_head(), None)
+            return Pair(args.get_head(), filter_helper(fn, args.get_tail()))
+        else:
+            if args.get_tail() == None:
+                pass
+            else:
+                return filter_helper(fn, args.get_tail())
+    if len(args) != 2:
+        raise CarlaeEvaluationError
+    fn, nxt = args[0], args[1]
+    return filter_helper(fn, nxt)
+
+def reduce_fn(args):
+    """
+    Takes a function, a list, and an initial value as inputs. It produces its output by
+    successively applying the given function to the elements in the list, maintaining an intermediate result along the way.
+    """
+    if len(args) != 3:
+        raise CarlaeEvaluationError
+    fn = args[0]
+    print(fn)
+    nxt = args[1]
+    print(nxt)
+    initial = args[2]
+    print(initial)
+    while (nxt != None):
+        if type(nxt) != Pair:
+            raise CarlaeEvaluationError
+        initial = fn([initial, nxt.get_head()])
+        nxt = nxt.get_tail()
+    return initial
 
 
 

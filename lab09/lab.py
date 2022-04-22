@@ -112,6 +112,8 @@ def tokenize(source):
     for i in range(len(working_lst)):
         #separates items
         separate_item(working_lst[i], new_split)
+
+    #checks that every open parenthesis is closed
     return new_split
     
 
@@ -127,7 +129,6 @@ def parse(tokens):
     Arguments:
         tokens (list): a list of strings representing tokens
     """
-
     def parse_expression(index):
         try:
             expression = number_or_symbol(tokens[index])
@@ -159,7 +160,13 @@ def parse(tokens):
         return expression, index + 1
 
     # checks that all parenthesis are matched
-    if tokens.count('(') != tokens.count(')') or len(tokens) > 1 and tokens[0] != '(':
+    openp, closep = 0, 0
+    for e in tokens:
+        if e == '(':
+            openp += 1
+        elif e == ')':
+            closep += 1
+    if openp != closep or len(tokens) > 1 and tokens[0] != '(':
         raise CarlaeSyntaxError
     new_index = 0
     parsed_expression, new_index = parse_expression(new_index)
@@ -573,12 +580,25 @@ def REPL(env = None):
         else:
             break
 
+
 def result_and_env(tree, env = None):
     # if no environment is given, create one
     if env == None:
         env = Environment(Environment(None, carlae_builtins), {})
 
     return evaluate(tree, env), env
+
+def evaluate_file(file, env = None):
+    result = ''
+    try: 
+        f = open(file, 'r')
+    except: 
+        raise CarlaeEvaluationError
+    lst = f.read().splitlines()
+    for e in lst:
+        result += e 
+        result += ' '
+    return result_and_env(parse(tokenize(result)),env)[0]
 
 
 

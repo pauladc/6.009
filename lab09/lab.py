@@ -433,12 +433,18 @@ class Environment():
         except:
             #var has not been assigned
             raise CarlaeNameError
+    def delete(self, var):
+        if var in self.bindings:
+                return self.bindings.pop(var)
+        else:
+            raise CarlaeNameError
     
     def define_var(self, var, value = None):
         """
         Assignns a value to a variable
         """
         self.bindings[var] = value
+        # print(self.bindings)
 
 class Function():
     def __init__(self, env = None, parameters = None, expression= None):
@@ -529,6 +535,16 @@ def evaluate(tree, env = None):
             env.define_var(name, new_value)
             return new_value
 
+        elif tree[0] == 'del':
+            return env.delete(tree[1])
+
+        elif tree[0] == 'let':
+            new_env = Environment(env, {})
+            for var, val in tree[1]:
+                evaluated = evaluate(val, env)
+                new_env.define_var(var, evaluated)
+            return evaluate(tree[2], new_env)
+
         #evaluates conditionals
         elif tree[0] == 'if':
             evalt = evaluate(tree[1], env)
@@ -610,5 +626,11 @@ if __name__ == "__main__":
     # doctest.testmod())
     # print(parse([]))
     # print(repr(build_lst([3, 4, 5])))
-    REPL()
+    # REPL()
     # print(islist(Pair(1, Pair(2, Pair(3, Pair(4, None))))))
+    # try:
+    #     for filename in sys.argv[1:]:
+    #         evaluate_file(filename)
+    # except:
+    #     pass
+    REPL()

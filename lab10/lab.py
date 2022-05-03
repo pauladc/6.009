@@ -1,6 +1,8 @@
 """6.009 Lab 10: Snek Is You Video Game"""
 
+from curses.ascii import isupper
 import doctest
+from xxlimited import new
 
 # NO ADDITIONAL IMPORTS!
 
@@ -18,7 +20,40 @@ direction_vector = {
     "right": (0, +1),
 }
 
+def inside_board(original, direction, board):
+    if original[0] + direction[0] >= len(board) or original[1] + direction[1] >= len(board[0]):
+        return False
+    elif original[0] + direction[0] < 0 or original[1] + direction[1] < 0:
+        return False
+    else:
+        return True
 
+def change_position(original, direction, board):
+    if inside_board(original, direction, board):
+        return (original[0] + direction[0], original[1] + direction[1])
+    else:
+        raise ValueError
+
+
+class gameObj():
+    def __init__(self, value, board, position):
+        self.value = value
+        self.board = board
+        self.position = position
+        self.properties = set()
+    
+    # def try_move(self, direction):
+    #     try_position = change_position(self.position, direction)
+    #     forward_neighbors = get_position(self.board, try_position)
+    #     if self.can_move is not None:
+    #         pass
+    #     elif any(map(lambda n: 'STOP' in n.properties and 'PUSH' not in n.properties, forward_neighbors)):
+    #         self.can_move = False
+    #     else:
+    #         self.can_move = all(map(lambda n: n.try_move(direction),
+    #                 filter(lambda n: n.properties & {'PUSH'}, forward_neighbors))) and \
+    #             position_in_bounds(self.board, try_position)
+    #     return self.can_move
 def new_game(level_description):
     """
     Given a description of a game state, create and return a game
@@ -38,7 +73,24 @@ def new_game(level_description):
     The exact choice of representation is up to you; but note that what you
     return will be used as input to the other functions.
     """
-    raise NotImplementedError
+    board = []
+    objects = []
+    for r_idx in range(len(level_description)):
+        new_row = []
+        for c_idx in range(len(level_description[0])):
+            if level_description[r_idx][c_idx] == []:
+                new_row.append([])
+            else:
+                new_obj = gameObj(level_description[r_idx][c_idx], board, (r_idx, c_idx))
+                new_row.append(new_obj)
+                objects.append(new_obj)
+        board.append(new_row)
+    game = {
+        'property_map': {property: [] for property in PROPERTIES},
+        'board': board,
+        'objects': objects
+    }
+    return game
 
 
 def step_game(game, direction):
@@ -51,7 +103,9 @@ def step_game(game, direction):
     step_game should return a Boolean: True if the game has been won after
     updating the state, and False otherwise.
     """
-    raise NotImplementedError
+    # if "snek" in game.values().value:
+
+    # return False
 
 
 def dump_game(game):

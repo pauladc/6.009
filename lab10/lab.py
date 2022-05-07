@@ -20,6 +20,9 @@ direction_vector = {
 }
 
 def inside_board(original, board, direction = (0,0)):
+    """
+    Checks if the location is inside the board
+    """
     if original[0] + direction[0] >= len(board) or original[1] + direction[1] >= len(board[0]):
         return False
     elif original[0] + direction[0] < 0 or original[1] + direction[1] < 0:
@@ -27,11 +30,17 @@ def inside_board(original, board, direction = (0,0)):
     else:
         return True
 
-def change_position(original, board, direction):
+def change_position(original, direction):
+    """
+    Returns a tuple containing the changed position (in the direction of movement)
+    """
     return (original[0] + direction[0], original[1] + direction[1])
 
 
 def get_obj(board, coordinates):
+    """
+    Returns an object if it is inside the board, otherwise returns empty list
+    """
     if inside_board(coordinates, board):
         return board[coordinates[0]][coordinates[1]]
     else:
@@ -40,6 +49,9 @@ def get_obj(board, coordinates):
 
 class gameObj():
     def __init__(self, value, board, position):
+        """
+        Initiates a gameObj
+        """
         self.properties = set()
         self.value = value
         self.board = board
@@ -48,93 +60,133 @@ class gameObj():
         self.toMove = None
     
     def restart_self(self):
+        """
+        Restarts the moveable properties of an object
+        """
         self.moveable = None
         self.toMove = None
 
     def restart_prop(self):
+        """
+        Restarts the properties (actions and nouns) of an object
+        """
         self.properties = set()
 
     def is_moveable(self, direction):
-        toTry = change_position(self.position, self.board, direction)
+        """
+        Checks if an object is moveable considering its surroundings
+        """
+        toTry = change_position(self.position,  direction)
         next_obj = get_obj(self.board, toTry)
+        #if the object hasnt been assigned already
         if self.moveable != None:
             pass
+        #saves all the objects that will be pushed from subsequent pushes
         potential_push = []
         for obj in next_obj:
+            #if the object cant be moved assign it False
             if 'PUSH' not in obj.properties and 'STOP' in obj.properties:
                 self.moveable = False
                 return
+            #finds all objects that could be pushed (if they are moveable)
             elif 'PUSH' in obj.properties:
                 potential_push.append(obj)
+        #checks that all the moveable objects can be pushed to assign original object 
         self.moveable = inside_board(toTry, self.board) and all(map(lambda obj: obj.is_moveable(direction), potential_push)) 
         return self.moveable
 
     def will_move(self, direction):
-        next_position = change_position(self.position, self.board, direction)
+        """
+        Checks which objects a moveable object will move in turn 
+        and updates their moveable properties.
+        """
+        next_position = change_position(self.position, direction)
         next_obj = get_obj(self.board, next_position)
         if self.toMove != None:
             pass
         else:
             self.toMove = True
             for obj in next_obj:
+                #assignes False if any objects are blocking the way
                 if 'STOP' in obj.properties and 'PUSH' not in obj.properties:
                     self.toMove = False
+            #if no objects block the way
             if self.toMove:
+                #evaluate all objects in following cell
                 for obj in next_obj:
+                    #recursively evaluate all subsequent push objects
                     if 'PUSH' in obj.properties:
                         obj.will_move(direction)
-                pull_position = change_position(self.position, self.board, (-direction[0], -direction[1]))
+                #evaluates previous cell
+                pull_position = change_position(self.position, (-direction[0], -direction[1]))
                 pulled_obj = get_obj(self.board, pull_position)
                 for obj in pulled_obj:
+                    #recursively evaluates pullable objects
                     if 'PULL' in obj.properties and obj.is_moveable(direction):
                         obj.will_move(direction)
         
 def find_rules(game):
-    def search_neighbors(obj, nouns, game_board, properties_dic):
+    """
+    Finds and parses the rules associated with each game
+    """
+    def search_neighbors(obj, nouns, game_board):
         for direction in [(1, 0), (0, 1)]:
-            new_position = change_position(obj.position, game_board, direction)
+            """
+            Searches the neighbors of an object in the reading directions
+            """
+            new_position = change_position(obj.position, direction)
             if not inside_board(new_position, game_board):
                 continue
             if get_obj(obj.board, new_position) != []:
+                #if the noun is followed by IS
                 if get_obj(obj.board, new_position)[0].value == 'IS':
-                    new_position = change_position(new_position, game_board, direction)
-                    if get_obj(obj.board, new_position) != []:
-                        new_obj = get_obj(obj.board, new_position)[0].value
-                        if new_obj in PROPERTIES:
-                            obj.properties.add(new_obj)
-                            properties_dic[obj.board[new_position[0]][new_position[1]][0].value].append(obj)
-                            nouns[obj.value.lower()].append(new_obj)
-                        elif new_obj in NOUNS:
-                            nouns[obj.value.lower()].append(new_obj)
+                    newer_position = change_position(new_position, direction)
+                    if get_obj(obj.board, newer_position) != []:
+                        nouns_or_prop = get_obj(obj.board, newer_position)[0].value
+                        #if the word following IS is a property
+                        if nouns_or_prop in PROPERTIES:
+                            #add property to noun properties
+                            nouns[obj.value.lower()].append(nouns_or_prop)
+                        #if the word follwing IS is a noun
+                        elif nouns_or_prop in NOUNS:
+                            #adds noun to noun properties
+                            nouns[obj.value.lower()].append(nouns_or_prop)
 
-    objects, game_board, properties_dic = game['objects'], game['board'], game['properties']
-
+    objects, game_board = game['objects'], game['board']
+    
+    #intializes dictionary holding properties/other nouns associated with each noun
     nouns = {val.lower():[] for val in NOUNS}
     for obj in objects:
         if obj.value.isupper():
+            #adds object to property dictionary
             if obj.value in PROPERTIES:
                 obj.properties.add(obj.value)
-                properties_dic[obj.value].append(obj)
+            #searches the neighbors of a noun
             elif obj.value in NOUNS:
-                search_neighbors(obj, nouns, game_board, properties_dic)
+                search_neighbors(obj, nouns, game_board)
 
-    for obj in objects:
-        if obj.value in nouns:
-            for props in nouns[obj.value]:
-                obj.properties.add(props)
-        elif obj.value in WORDS:
-            obj.properties = {'PUSH'}
-
+    #assigns each noun the properties associated to it in nouns dic and each property 'PUSH'
+    for noun_or_prop in objects:
+        if noun_or_prop.value in nouns:
+            for props in nouns[noun_or_prop.value]:
+                noun_or_prop.properties.add(props)
+        elif noun_or_prop.value in WORDS:
+            noun_or_prop.properties = {'PUSH'}
     return nouns
 
-
 def are_nouns(game, nouns):
-    for obj in game['objects']:
-        if obj.value in nouns:
-            for props in nouns[obj.value]:
+    """
+    Input: noun list from find_rules
+    Transforms any objects that have been reassigned in the manner
+    SNEK IS ROCK or WALL IS ROCK
+    Returns: all objects transformed into their reassignes graphical objects
+    """
+    for noun in game['objects']:
+        if noun.value in nouns:
+            for props in nouns[noun.value]:
                 if props in NOUNS:
-                    obj.value = props.lower()
-                    obj.properties = {p if p != props else {} for p in nouns[props.lower()]}
+                    noun.value = props.lower()
+                    noun.properties = {p if p != props else {} for p in nouns[props.lower()]}
                     break
         
 
@@ -157,7 +209,7 @@ def new_game(level_description):
     The exact choice of representation is up to you; but note that what you
     return will be used as input to the other functions.
     """
-
+    #creates game board replacing string for gameObj objects
     board = []
     game_objs = []
     for r_idx in range(len(level_description)):
@@ -168,18 +220,22 @@ def new_game(level_description):
             else:
                 this_level = []
                 for obj in level_description[r_idx][c_idx]:
+                    #creates an instance of gameObj for each string to board
                     new_obj = gameObj(obj, board, (r_idx, c_idx))
+                    #appends gameObj to board
                     this_level.append(new_obj)
+                    #appends all gamObj instances to a list of objects
                     game_objs.append(new_obj)
                 new_row.append(this_level)
         board.append(new_row)
+
     game = {
-        'properties': {prop:[] for prop in PROPERTIES},
         'board': board,
         'objects': game_objs
     }
-    are_nouns(game, find_rules(game))
 
+    #initalizes game rules without changing objects 
+    find_rules(game)
     return game
 
 
@@ -195,37 +251,42 @@ def step_game(game, direction):
     """
     direction, board, objects = direction_vector[direction], game['board'], game['objects']
 
+    #restarts moveability in all objects
     for obj in objects:
         obj.restart_self()
 
+    #checks if each object is moveable considering current rules
     for obj in objects:
         if 'YOU' in obj.properties:
             if obj.is_moveable(direction):
                 obj.will_move(direction)
 
+    #updates location for each object
     for obj in objects:
         if obj.toMove:
             get_obj(board, obj.position).remove(obj)
-            obj.position = change_position(obj.position, obj.board, direction)
+            obj.position = change_position(obj.position, direction)
             get_obj(board, obj.position).append(obj)
     
+    #restarts properties since rules may have changes
     for obj in objects:
         obj.restart_prop()
 
+    #recalculates rules, reassignes properties and changes nouns
     are_nouns(game, find_rules(game))
 
+    #removes all objects that have been defeated
     toRemove, count = {}, 0
-
     for obj in objects:
         if 'YOU' in obj.properties:
             if any(map(lambda item: 'DEFEAT' in item.properties, board[obj.position[0]][obj.position[1]])):
                 toRemove[(obj.position[0],obj.position[1], count)] = obj
                 count += 1
-
     for key, val in toRemove.items():
         board[key[0]][key[1]].remove(val)
         objects.remove(val)
 
+    #checks if any objects ended up in a winning cell
     for obj in objects:
         if 'YOU' in obj.properties:
             for in_cell in board[obj.position[0]][obj.position[1]]:

@@ -28,10 +28,8 @@ def inside_board(original, board, direction = (0,0)):
         return True
 
 def change_position(original, board, direction):
-    if inside_board(original, board, direction,):
-        return (original[0] + direction[0], original[1] + direction[1])
-    else:
-        raise ValueError
+    return (original[0] + direction[0], original[1] + direction[1])
+
 
 def get_obj(board, coordinates):
     if inside_board(coordinates, board):
@@ -46,111 +44,71 @@ class gameObj():
         self.value = value
         self.board = board
         self.position = position
-        self.reset()
+        self.moveable = None
+        self.toMove = None
     
-    def reset(self):
-        self.moveable = None 
+    def restart_self(self):
+        self.moveable = None
+        self.toMove = None
 
-    def can_move(self, direction):
-        if self.moveable is None:
-            try:
-                try_position = change_position(self.position, self.board, direction)
-            except:
-                return False
-            if self.board[try_position[0]][try_position[1]] != []:
-                for obj in self.board[try_position[0]][try_position[1]]:
-                    if not inside_board(try_position, self.board):
-                        return False
-                    elif 'PUSH' in obj.properties:
-                        copied = [copy for copy in self.board[try_position[0]][try_position[1]]]
-                        while obj in copied:
-                            copied.remove(obj)
-                        if any(map(lambda cell: 'STOP' in cell.properties, copied)):
-                            return False
-                        return obj.can_move(direction)
-                    elif 'STOP' in obj.properties:
-                        return False
-        return True
+    def restart_prop(self):
+        self.properties = set()
 
-    def move_obj(self, direction):
-        if inside_board(self.position, self.board, direction):
-            try_position = change_position(self.position, self.board, direction)
-            if self.board[try_position[0]][try_position[1]] != []:
-                for obj in self.board[try_position[0]][try_position[1]]:
-                    # add recursion so it will keep pushing nearby push objects
+    def is_moveable(self, direction):
+        toTry = change_position(self.position, self.board, direction)
+        next_obj = get_obj(self.board, toTry)
+        if self.moveable != None:
+            pass
+        potential_push = []
+        for obj in next_obj:
+            if 'PUSH' not in obj.properties and 'STOP' in obj.properties:
+                self.moveable = False
+                return
+            elif 'PUSH' in obj.properties:
+                potential_push.append(obj)
+        self.moveable = inside_board(toTry, self.board) and all(map(lambda obj: obj.is_moveable(direction), potential_push)) 
+        return self.moveable
+
+    def will_move(self, direction):
+        next_position = change_position(self.position, self.board, direction)
+        next_obj = get_obj(self.board, next_position)
+        if self.toMove != None:
+            pass
+        else:
+            self.toMove = True
+            for obj in next_obj:
+                if 'STOP' in obj.properties and 'PUSH' not in obj.properties:
+                    self.toMove = False
+            if self.toMove:
+                for obj in next_obj:
                     if 'PUSH' in obj.properties:
-                        moveable = obj.can_move(direction)
-                        if moveable:
-                            obj.move_obj(direction)
-                    elif 'STOP' in obj.properties:
-                        return
-                    else:
-                        pass
-            # try:
-            if any(map(lambda cell: 'STOP' in cell.properties, self.board[self.position[0]][self.position[1]])):
-                pass
-            else:
-                if inside_board(self.position, self.board, (-direction[0], -direction[1])) and any(map(lambda cell: 'PULL' in cell.properties, self.board[self.position[0]-direction[0]][self.position[1]-direction[1]])):
-                    past_position = self.position
-                    print('past position ', past_position)
-                    pull_position = change_position(self.position, self.board, (-direction[0], -direction[1]))
-                    print('pull position ', pull_position)
-                    # While there are still objects to pull...
-                    while any(map(lambda cell: 'PULL' in cell.properties, self.board[pull_position[0]][pull_position[1]])):
-                        # if nothing is in front of pullable computer...
-                        if not any(map(lambda cell: 'STOP' in cell.properties, self.board[past_position[0]][past_position[1]])):
-                            print('board ', [obj.value for obj in self.board[pull_position[0]][pull_position[1]]])
-                            toRemove = []
-                            # for every object that COULD be pulled....
-                            for obj in self.board[pull_position[0]][pull_position[1]]:
-                                print('in pull ', obj.value, obj.position)
-                                # if object is actually pullable...
-                                if 'PULL' in obj.properties:
-                                    # move object to next position
-                                    self.board[past_position[0]][past_position[1]].append(obj)
-                                    # queue to remove later
-                                    toRemove.append(obj)
-                            # remove objects from their past position
-                            for obj in toRemove:
-                                self.board[pull_position[0]][pull_position[1]].remove(obj)
-                            # update the past position
-                            past_position = pull_position
-                            if inside_board(past_position, self.board, (-direction[0], -direction[1])):
-                                pull_position = change_position(past_position, self.board, (-direction[0], -direction[1]))
-                            else:
-                                break
-                        else:
-                            break
-
-            if self.can_move(direction):
-                self.board[self.position[0]][self.position[1]].remove(self)
-                self.position = try_position
-                self.board[self.position[0]][self.position[1]].append(self)
-
-
+                        obj.will_move(direction)
+                pull_position = change_position(self.position, self.board, (-direction[0], -direction[1]))
+                pulled_obj = get_obj(self.board, pull_position)
+                for obj in pulled_obj:
+                    if 'PULL' in obj.properties and obj.is_moveable(direction):
+                        obj.will_move(direction)
         
 def find_rules(game):
     def search_neighbors(obj, nouns, game_board, properties_dic):
         for direction in [(1, 0), (0, 1)]:
-            try:
-                new_position = change_position(obj.position, game_board, direction)
-            except:
+            new_position = change_position(obj.position, game_board, direction)
+            if not inside_board(new_position, game_board):
                 continue
-            if obj.board[new_position[0]][new_position[1]] != []:
-                if obj.board[new_position[0]][new_position[1]][0].value == 'IS':
-                    try:
-                        new_position = change_position(new_position, game_board, direction)
-                        if obj.board[new_position[0]][new_position[1]] != []:
-                            if obj.board[new_position[0]][new_position[1]][0].value in PROPERTIES:
-                                obj.properties.add(obj.board[new_position[0]][new_position[1]][0].value)
-                                properties_dic[obj.board[new_position[0]][new_position[1]][0].value].append(obj)
-                                nouns[obj.value.lower()].append(obj.board[new_position[0]][new_position[1]][0].value)
-                            elif obj.board[new_position[0]][new_position[1]][0].value in NOUNS:
-                                nouns[obj.value.lower()].append(obj.board[new_position[0]][new_position[1]][0].value)
-                    except:
-                        pass    
+            if get_obj(obj.board, new_position) != []:
+                if get_obj(obj.board, new_position)[0].value == 'IS':
+                    new_position = change_position(new_position, game_board, direction)
+                    if get_obj(obj.board, new_position) != []:
+                        new_obj = get_obj(obj.board, new_position)[0].value
+                        if new_obj in PROPERTIES:
+                            obj.properties.add(new_obj)
+                            properties_dic[obj.board[new_position[0]][new_position[1]][0].value].append(obj)
+                            nouns[obj.value.lower()].append(new_obj)
+                        elif new_obj in NOUNS:
+                            nouns[obj.value.lower()].append(new_obj)
 
     objects, game_board, properties_dic = game['objects'], game['board'], game['properties']
+
     nouns = {val.lower():[] for val in NOUNS}
     for obj in objects:
         if obj.value.isupper():
@@ -166,7 +124,7 @@ def find_rules(game):
                 obj.properties.add(props)
         elif obj.value in WORDS:
             obj.properties = {'PUSH'}
-        # print((obj.value, obj.properties))
+
     return nouns
 
 
@@ -178,7 +136,6 @@ def are_nouns(game, nouns):
                     obj.value = props.lower()
                     obj.properties = {p if p != props else {} for p in nouns[props.lower()]}
                     break
-        # print((obj.value, obj.properties))
         
 
 def new_game(level_description):
@@ -200,7 +157,7 @@ def new_game(level_description):
     The exact choice of representation is up to you; but note that what you
     return will be used as input to the other functions.
     """
-    # print(level_description)
+
     board = []
     game_objs = []
     for r_idx in range(len(level_description)):
@@ -222,6 +179,7 @@ def new_game(level_description):
         'objects': game_objs
     }
     are_nouns(game, find_rules(game))
+
     return game
 
 
@@ -235,13 +193,44 @@ def step_game(game, direction):
     step_game should return a Boolean: True if the game has been won after
     updating the state, and False otherwise.
     """
-    direction, properties, board, objects = direction_vector[direction], game['properties'], game['board'], game['objects']
+    direction, board, objects = direction_vector[direction], game['board'], game['objects']
+
     for obj in objects:
-        # print(obj.value, obj.properties)
+        obj.restart_self()
+
+    for obj in objects:
         if 'YOU' in obj.properties:
-            print('is you ', obj.value, obj.position)
-            obj.move_obj(direction)
-    print(dump_game(game))
+            if obj.is_moveable(direction):
+                obj.will_move(direction)
+
+    for obj in objects:
+        if obj.toMove:
+            get_obj(board, obj.position).remove(obj)
+            obj.position = change_position(obj.position, obj.board, direction)
+            get_obj(board, obj.position).append(obj)
+    
+    for obj in objects:
+        obj.restart_prop()
+
+    are_nouns(game, find_rules(game))
+
+    toRemove, count = {}, 0
+
+    for obj in objects:
+        if 'YOU' in obj.properties:
+            if any(map(lambda item: 'DEFEAT' in item.properties, board[obj.position[0]][obj.position[1]])):
+                toRemove[(obj.position[0],obj.position[1], count)] = obj
+                count += 1
+
+    for key, val in toRemove.items():
+        board[key[0]][key[1]].remove(val)
+        objects.remove(val)
+
+    for obj in objects:
+        if 'YOU' in obj.properties:
+            for in_cell in board[obj.position[0]][obj.position[1]]:
+                if 'WIN' in in_cell.properties:
+                    return True
     return False
 
 
@@ -258,30 +247,3 @@ def dump_game(game):
     """
     return [[[obj.value for obj in c] for c in r] for r in game['board']]
 
-curr_game = [
-      [["SNEK"], [], [], ["SNEK"]],
-      [["IS"], [], ["snek"], ["IS"]],
-      [["PULL"], ["snek"], [], ["PUSH"]],
-      [[], [], [], []]
-    ]
-
-print(dump_game(new_game(curr_game)))
-[[["SNEK"], ["IS"], ["YOU"], [], [], [], [], [], [], [], [], [], [], [], []], 
-[["WALL"], ["IS"], ["STOP"], [], [], [], [], [], [], [], [], [], [], [], []], 
-[["COMPUTER"], ["IS"], ["PULL"], [], [], [], [], [], [], [], [], [], [], [], []], 
-[[], [], [], ["computer"], ["computer"], ["wall"], ["computer"], ["computer"], ["computer", "wall"], ["computer"], ["computer"], ["snek"], [], [], []], 
-[[], [], [], [], [], [], [], [], [], [], [], [], [], [], []], 
-[[], [], [], ["computer"], ["computer"], ["snek", "wall"], [], [], [], [], ["wall"], [], [], [], []],
-[[], [], [], [], [], [], [], [], [], [], [], [], [], [], []], 
-[[], [], [], ["computer"], [], ["computer"], ["computer"], ["computer"], ["snek"], [], [], [], [], [], []],
-[[], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
-[["snek"], [], [], [], [], [], [], [], [], [], [], [], [], [], ["computer"]], 
-[[], [], [], [], [], [], [], [], [], [], [], [], [], [], []], 
-[[], [], [], [], [], [], [], [], [], [], [], ["computer"], ["computer"], ["computer"], ["snek"]], 
-[[], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
-[[], [], [], [], ["snek"], ["computer"], ["computer"], [], [], [], [], [], [], [], []],
-[[], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
-[[], [], [], [], ["snek"], ["computer"], ["computer"], ["snek"], [], [], [], [], [], [], []],
-[[], [], [], [], [], [], [], [], [], [], [], [], [], [], []], 
-[[], [], [], [], [], ["snek", "computer"], [], [], [], [], [], [], [], [], []], 
-[[], [], [], [], [], [], [], [], [], [], [], [], [], [], []]]

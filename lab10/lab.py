@@ -9,6 +9,7 @@ from operator import truediv
 # but only these are guaranteed to have graphics.
 NOUNS = {"SNEK", "FLAG", "ROCK", "WALL", "COMPUTER", "BUG"}
 PROPERTIES = {"YOU", "WIN", "STOP", "PUSH", "DEFEAT", "PULL"}
+NOT_ALL_WORDS = NOUNS | PROPERTIES
 WORDS = NOUNS | PROPERTIES | {"AND", "IS"}
 
 # Maps a keyboard direction to a (delta_row, delta_column) vector.
@@ -129,33 +130,40 @@ def find_rules(game):
     """
     Finds and parses the rules associated with each game
     """
-    def search_neighbors(obj, nouns, game_board):
-        for direction in [(1, 0), (0, 1)]:
+    def search_neighbors(toAssign, nouns, game_board, direction, active, assignment):
+        print(direction)
+        for direct in direction:
             """
-            Searches the neighbors of an object in the reading directions
+            Searches the neighbors of an object in the reading directions recursively
             """
-            new_position = change_position(obj.position, direction)
+            #finds object at next position
+            new_position = change_position(toAssign.position, direct)
             if not inside_board(new_position, game_board):
                 continue
-            if get_obj(obj.board, new_position) != []:
-                #if the noun is followed by IS
-                if get_obj(obj.board, new_position)[0].value == 'IS':
-                    newer_position = change_position(new_position, direction)
-                    if get_obj(obj.board, newer_position) != []:
-                        nouns_or_prop = get_obj(obj.board, newer_position)[0].value
-                        #if the word following IS is a property
-                        if nouns_or_prop in PROPERTIES:
-                            #add property to noun properties
-                            nouns[obj.value.lower()].append(nouns_or_prop)
-                        #if the word follwing IS is a noun
-                        elif nouns_or_prop in NOUNS:
-                            #adds noun to noun properties
-                            nouns[obj.value.lower()].append(nouns_or_prop)
+            if get_obj(toAssign.board, new_position) != []:
+                new_obj = get_obj(toAssign.board, new_position)[0]
+                #if next object is "IS" then search recursively and flag activation
+                if new_obj.value == 'IS':
+                    if inside_board(new_position, toAssign.board, direct) and get_obj(toAssign.board, change_position(new_position, direct)) != [] and get_obj(toAssign.board, change_position(new_position, direct))[0].value in NOT_ALL_WORDS:
+                        assignment.append(toAssign)
+                        search_neighbors(new_obj, nouns, game_board, [direct], True, assignment)
+                #if next object is "IS" then search recursively and keep flaged/not flaged activation
+                elif new_obj.value == 'AND':
+                        assignment.append(toAssign)
+                        search_neighbors(new_obj, nouns, game_board, [direct], active, assignment)
+                #if the object has been activated, assign nouns to properties/nouns
+                elif assignment != [] and active:
+                    for e in assignment:
+                        if e.value in NOT_ALL_WORDS:
+                            nouns[e.value.lower()].add(new_obj.value)
+                #if next object is not valid deactivate
+                else:
+                    active = False
 
     objects, game_board = game['objects'], game['board']
     
     #intializes dictionary holding properties/other nouns associated with each noun
-    nouns = {val.lower():[] for val in NOUNS}
+    nouns = {val.lower():set() for val in NOUNS}
     for obj in objects:
         if obj.value.isupper():
             #adds object to property dictionary
@@ -163,7 +171,8 @@ def find_rules(game):
                 obj.properties.add(obj.value)
             #searches the neighbors of a noun
             elif obj.value in NOUNS:
-                search_neighbors(obj, nouns, game_board)
+                print(obj.position)
+                search_neighbors(obj, nouns, game_board, [(1, 0), (0, 1)], False, [])
 
     #assigns each noun the properties associated to it in nouns dic and each property 'PUSH'
     for noun_or_prop in objects:
@@ -172,6 +181,8 @@ def find_rules(game):
                 noun_or_prop.properties.add(props)
         elif noun_or_prop.value in WORDS:
             noun_or_prop.properties = {'PUSH'}
+        print(noun_or_prop.value, noun_or_prop.properties)
+    print(nouns)
     return nouns
 
 def are_nouns(game, nouns):
@@ -188,6 +199,8 @@ def are_nouns(game, nouns):
                     noun.value = props.lower()
                     noun.properties = {p if p != props else {} for p in nouns[props.lower()]}
                     break
+        print('are nouns')
+        print(noun.value, noun.properties)
         
 
 def new_game(level_description):
@@ -286,8 +299,10 @@ def step_game(game, direction):
         board[key[0]][key[1]].remove(val)
         objects.remove(val)
 
+    print(dump_game(game))
     #checks if any objects ended up in a winning cell
     for obj in objects:
+        print(obj.value, obj.properties)
         if 'YOU' in obj.properties:
             for in_cell in board[obj.position[0]][obj.position[1]]:
                 if 'WIN' in in_cell.properties:

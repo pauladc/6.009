@@ -131,7 +131,6 @@ def find_rules(game):
     Finds and parses the rules associated with each game
     """
     def search_neighbors(toAssign, nouns, game_board, direction, active, assignment):
-        print(direction)
         for direct in direction:
             """
             Searches the neighbors of an object in the reading directions recursively

@@ -170,7 +170,6 @@ def find_rules(game):
                 obj.properties.add(obj.value)
             #searches the neighbors of a noun
             elif obj.value in NOUNS:
-                print(obj.position)
                 search_neighbors(obj, nouns, game_board, [(1, 0), (0, 1)], False, [])
 
     #assigns each noun the properties associated to it in nouns dic and each property 'PUSH'
@@ -180,8 +179,6 @@ def find_rules(game):
                 noun_or_prop.properties.add(props)
         elif noun_or_prop.value in WORDS:
             noun_or_prop.properties = {'PUSH'}
-        print(noun_or_prop.value, noun_or_prop.properties)
-    print(nouns)
     return nouns
 
 def are_nouns(game, nouns):
@@ -198,8 +195,6 @@ def are_nouns(game, nouns):
                     noun.value = props.lower()
                     noun.properties = {p if p != props else {} for p in nouns[props.lower()]}
                     break
-        print('are nouns')
-        print(noun.value, noun.properties)
         
 
 def new_game(level_description):
@@ -298,10 +293,8 @@ def step_game(game, direction):
         board[key[0]][key[1]].remove(val)
         objects.remove(val)
 
-    print(dump_game(game))
     #checks if any objects ended up in a winning cell
     for obj in objects:
-        print(obj.value, obj.properties)
         if 'YOU' in obj.properties:
             for in_cell in board[obj.position[0]][obj.position[1]]:
                 if 'WIN' in in_cell.properties:
